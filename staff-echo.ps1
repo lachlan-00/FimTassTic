@@ -129,7 +129,7 @@ foreach($line in $input) {
 
             $DATE = "${YEAR}-${MONTH}-${DAY}"
             $DATE = $DATE, "00:00:00"
-            If ($DATE -ge $Termination) {
+            If ($DATE -gt $Termination) {
                 write-host "USER HAS LEFT", $FullName
                 write-host $DATE
                 write-host $Termination

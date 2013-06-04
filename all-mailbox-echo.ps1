@@ -48,7 +48,7 @@ foreach($line in $input)
 
             # Enable mailbox for user If mail address is missing
             if (!($TestUser.mail)) {
-                Enable-Mailbox -Identity $TestUser.name -Database Staff
+                #Enable-Mailbox -Identity $TestUser.name -Database Staff
                 write-host $LoginName "created mailbox"
             }
         }
@@ -76,7 +76,7 @@ foreach($line in $input)
 
                 # Disable mailbox for users that have a mail address
                 if ($TestUser.mail) {
-                    Disable-Mailbox -Identity $TestUser.name -Confirm:$false
+                    #Disable-Mailbox -Identity $TestUser.name -Confirm:$false
                     write-host $LoginName "Disabled mailbox"
                 }
             }
@@ -110,7 +110,7 @@ foreach($line in $StudentInput)
 
             # Enable mailbox for user If mail address is missing
             if (!($TestUser.mail)) {
-                Enable-Mailbox -Identity $TestUser.name -Database Staff
+                #Enable-Mailbox -Identity $TestUser.name -Database Staff
                 write-host $LoginName "created mailbox"
             }
         }
@@ -140,7 +140,7 @@ foreach($line in $StudentInput)
 
                 # Disable mailbox for users that have a mail address
                 if ($TestUser.mail) {
-                    Disable-Mailbox -Identity $TestUser.name -Confirm:$false
+                    #Disable-Mailbox -Identity $TestUser.name -Confirm:$false
                     write-host $LoginName "Disabled mailbox"
                 }
             }
