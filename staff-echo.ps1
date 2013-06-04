@@ -117,9 +117,29 @@ foreach($line in $input) {
     
     Else {
         If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
-            write-host "USER HAS LEFT", $FullName
-            write-host $Termination
-            write-host
+            $YEAR = [string](Get-Date).Year
+            $MONTH = [string](Get-Date).Month
+            If ($MONTH.length -eq 1) {
+                $MONTH = "0${MONTH}"
+            }
+            $DAY = [string](Get-Date).Day
+            If ($DAY.length -eq 1) {
+                $DAY = "0${DAY}"
+            }
+
+            $DATE = "${YEAR}-${MONTH}-${DAY}"
+            $DATE = $DATE, "00:00:00"
+            If ($DATE -ge $Termination) {
+                write-host "USER HAS LEFT", $FullName
+                write-host $DATE
+                write-host $Termination
+                write-host
+            }
+            Else {
+                write-host "Not Final Leaving Date", $FullName
+                write-host $DATE
+                write-host $Termination
+            }
         }
     }
 }

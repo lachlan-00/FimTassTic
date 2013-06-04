@@ -487,62 +487,77 @@ foreach($line in $input) {
     Else {
         # Disable users with a termination date if they are still enabled
         If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode) -and (Enabled -eq "True")) }) {
-            write-host "DISABLING ACCOUNT, '$($LoginName)'"
-
-            # Set user to confirm details
-            $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode)) }
-
-            if (!($TestUser.distinguishedname.Contains($DisablePath))) {
-                # Move to disabled user OU if not already there
-                Get-ADUser $LoginName | Move-ADObject -TargetPath $DisablePath
-                write-host $LoginName "MOVED to Disabled OU"
+            $YEAR = [string](Get-Date).Year
+            $MONTH = [string](Get-Date).Month
+            If ($MONTH.length -eq 1) {
+                $MONTH = "0${MONTH}"
+            }
+            $DAY = [string](Get-Date).Day
+            If ($DAY.length -eq 1) {
+                $DAY = "0${DAY}"
             }
 
-            # Check Group Membership
-            #if ($TestDomainUser.name.contains($TestUser.name)) {
-            #    Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
-            #    write-host $LoginName "REMOVED Domain Users"
-            #}
-            if ($StudentGroup.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity "Students" -Member $LoginName
-                write-host $LoginName "REMOVED Students"
-            }
-            if ($5Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $5Name -Member $LoginName
-                write-host $LoginName "REMOVED 5"
-            }
-            if ($6Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $6Name -Member $LoginName
-                write-host $LoginName "REMOVED 6"
-            }
-            if ($7Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $7Name -Member $LoginName
-                write-host $LoginName "REMOVED 7"
-            }
-            if ($8Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $8Name -Member $LoginName
-                write-host $LoginName "REMOVED 8"
-            }
-            if ($9Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $9Name -Member $LoginName
-                write-host $LoginName "REMOVED 9"
-            }
-            if ($10Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $10Name -Member $LoginName
-                write-host $LoginName "REMOVED 10"
-            }
-            if ($11Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $11Name -Member $LoginName
-                write-host $LoginName "REMOVED 11"
-            }
-            if ($12Group.name.contains($TestUser.name)) {
-                Remove-ADGroupMember -Force -Identity $12Name -Member $LoginName
-                write-host $LoginName "REMOVED 12"
-            }
+            $DATE = "${YEAR}-${MONTH}-${DAY}"
+            $DATE = $DATE, "00:00:00"
+            If ($DATE -ge $Termination) {
+                write-host "DISABLING ACCOUNT, '$($LoginName)'"
+                write-host $DATE
+                write-host $Termination
 
-            # Disable The account
-            Set-ADUser -Identity $LoginName -Enabled $false
+                # Set user to confirm details
+                $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode)) }
 
+                if (!($TestUser.distinguishedname.Contains($DisablePath))) {
+                    # Move to disabled user OU if not already there
+                    Get-ADUser $LoginName | Move-ADObject -TargetPath $DisablePath
+                    write-host $LoginName "MOVED to Disabled OU"
+                }
+
+                # Check Group Membership
+                #if ($TestDomainUser.name.contains($TestUser.name)) {
+                #    Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
+                #    write-host $LoginName "REMOVED Domain Users"
+                #}
+                if ($StudentGroup.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity "Students" -Member $LoginName
+                    write-host $LoginName "REMOVED Students"
+                }
+                if ($5Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $5Name -Member $LoginName
+                    write-host $LoginName "REMOVED 5"
+                }
+                if ($6Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $6Name -Member $LoginName
+                    write-host $LoginName "REMOVED 6"
+                }
+                if ($7Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $7Name -Member $LoginName
+                    write-host $LoginName "REMOVED 7"
+                }
+                if ($8Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $8Name -Member $LoginName
+                    write-host $LoginName "REMOVED 8"
+                }
+                if ($9Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $9Name -Member $LoginName
+                    write-host $LoginName "REMOVED 9"
+                }
+                if ($10Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $10Name -Member $LoginName
+                    write-host $LoginName "REMOVED 10"
+                }
+                if ($11Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $11Name -Member $LoginName
+                    write-host $LoginName "REMOVED 11"
+                }
+                if ($12Group.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity $12Name -Member $LoginName
+                    write-host $LoginName "REMOVED 12"
+                }
+
+                # Disable The account
+                Set-ADUser -Identity $LoginName -Enabled $false
+            }
         }
     }
 }

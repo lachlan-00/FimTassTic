@@ -152,40 +152,54 @@ foreach($line in $input) {
 
         # Disable users with a termination date if they are still enabled
         If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
-            write-host "DISABLING ACCOUNT, '$($LoginName)'"
-
-            # Set user to confirm details
-            $TestUser = Get-ADUser -Identity $LoginName
-
-            if (!($TestUser.distinguishedname.Contains($DisablePath))) {
-                # Move to disabled user OU if not already there
-                Get-ADUser $LoginName | Move-ADObject -TargetPath $DisablePath
+            $YEAR = [string](Get-Date).Year
+            $MONTH = [string](Get-Date).Month
+            If ($MONTH.length -eq 1) {
+                $MONTH = "0${MONTH}"
+            }
+            $DAY = [string](Get-Date).Day
+            If ($DAY.length -eq 1) {
+                $DAY = "0${DAY}"
             }
 
-            # Check Group Membership
-            if ($TestDomainUser.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
-                        write-host $LoginName "REMOVED Domain Users"
-            }
-            if ($TestStaff.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Force -Identity "Staff" -Member $LoginName
-                        write-host $LoginName "REMOVED Staff"
-            }
-            if ($TestAllStaff.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Force -Identity "All Staff" -Member $LoginName
-                        write-host $LoginName "REMOVED allstaff"
-            }
-            if ($TestTeachers.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Force -Identity "Teachers" -Member $LoginName
-                        write-host $LoginName "REMOVED Teachers"
-            }
-            if ($TestAllTeachers.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Force -Identity "Teachers - All" -Member $LoginName
-                        write-host $LoginName "REMOVED Teachers - All"
-            }
+            $DATE = "${YEAR}-${MONTH}-${DAY}"
+            $DATE = $DATE, "00:00:00"
+            If ($DATE -ge $Termination) {
+                write-host "DISABLING ACCOUNT, '$($LoginName)'"
+
+                # Set user to confirm details
+                $TestUser = Get-ADUser -Identity $LoginName
+
+                if (!($TestUser.distinguishedname.Contains($DisablePath))) {
+                    # Move to disabled user OU if not already there
+                    Get-ADUser $LoginName | Move-ADObject -TargetPath $DisablePath
+                }
+
+                # Check Group Membership
+                if ($TestDomainUser.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
+                    write-host $LoginName "REMOVED Domain Users"
+                }
+                if ($TestStaff.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity "Staff" -Member $LoginName
+                    write-host $LoginName "REMOVED Staff"
+                }
+                if ($TestAllStaff.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity "All Staff" -Member $LoginName
+                    write-host $LoginName "REMOVED allstaff"
+                }
+                if ($TestTeachers.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity "Teachers" -Member $LoginName
+                    write-host $LoginName "REMOVED Teachers"
+                }
+                if ($TestAllTeachers.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Force -Identity "Teachers - All" -Member $LoginName
+                    write-host $LoginName "REMOVED Teachers - All"
+                }
             
-            # Disable The account
-            Set-ADUser -Identity $LoginName -Enabled $false
+                # Disable The account
+                Set-ADUser -Identity $LoginName -Enabled $false
+            }
         }
     }
 }
