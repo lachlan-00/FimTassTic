@@ -38,7 +38,7 @@ $ReliefTeacherPath = "OU=Relief and Preservice Teachers,OU=Staff,OU=Curriculum U
 $TutorPath = "OU=Tutors,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $DisablePath = "OU=staff,OU=Disabled,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 # Get membership for group Membership Tests
-$TestDomainUser = Get-ADGroupMember -Identity "Domain Users"
+###$TestDomainUser = Get-ADGroupMember -Identity "Domain Users"
 $TestStaff = Get-ADGroupMember -Identity "Staff"
 $TestAllStaff = Get-ADGroupMember -Identity "All Staff"
 $TestTeachers = Get-ADGroupMember -Identity "Teachers"
@@ -125,14 +125,14 @@ foreach($line in $input) {
             }
             
             # Check Group Membership
-            if (!($TestDomainUser.name.contains($TestUser.name))) {
-                try {
-                        Add-ADGroupMember -Identity "Domain Users" -Member $LoginName
-                        write-host $LoginName "added Domain Users"
-                    }
-                    catch {}
-                    finally {}
-            }
+            #if (!($TestDomainUser.name.contains($TestUser.name))) {
+            #    try {
+            #            Add-ADGroupMember -Identity "Domain Users" -Member $LoginName
+            #            write-host $LoginName "added Domain Users"
+            #        }
+            #        catch {}
+            #        finally {}
+            #}
             if (!($TestStaff.name.contains($TestUser.name))) {
                         Add-ADGroupMember -Identity "Staff" -Member $LoginName
                         write-host $LoginName "added Staff"
@@ -176,24 +176,24 @@ foreach($line in $input) {
                 }
 
                 # Check Group Membership
-                if ($TestDomainUser.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
-                    write-host $LoginName "REMOVED Domain Users"
-                }
+                #if ($TestDomainUser.name.contains($TestUser.name)) {
+                #    Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
+                #    write-host $LoginName "REMOVED Domain Users"
+                #}
                 if ($TestStaff.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Force -Identity "Staff" -Member $LoginName
+                    Remove-ADGroupMember -Identity "Staff" -Member $LoginName -Confirm:$false
                     write-host $LoginName "REMOVED Staff"
                 }
                 if ($TestAllStaff.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Force -Identity "All Staff" -Member $LoginName
+                    Remove-ADGroupMember -Identity "All Staff" -Member $LoginName -Confirm:$false
                     write-host $LoginName "REMOVED allstaff"
                 }
                 if ($TestTeachers.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Force -Identity "Teachers" -Member $LoginName
+                    Remove-ADGroupMember -Identity "Teachers" -Member $LoginName -Confirm:$false
                     write-host $LoginName "REMOVED Teachers"
                 }
                 if ($TestAllTeachers.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Force -Identity "Teachers - All" -Member $LoginName
+                    Remove-ADGroupMember -Identity "Teachers - All" -Member $LoginName -Confirm:$false
                     write-host $LoginName "REMOVED Teachers - All"
                 }
             

@@ -49,7 +49,7 @@ $10Name = "S-G_Group C"
 $11Name = "S-G_Group B"
 $12Name = "S-G_Group A"
 # Get membership for group Membership Tests
-$TestDomainUser = Get-ADGroupMember -Identity "Domain Users"
+###$TestDomainUser = Get-ADGroupMember -Identity "Domain Users"
 $StudentGroup = Get-ADGroupMember -Identity "Students"
 $5Group = Get-ADGroupMember -Identity "S-G_Group H"
 $6Group = Get-ADGroupMember -Identity "S-G_Group G"
@@ -262,10 +262,10 @@ foreach($line in $input) {
             }
 
             # Check Group Membership
-            if (!($TestDomainUser.name.contains($TestUser.name))) {
-                #Add-ADGroupMember -Identity "Domain Users" -Member $LoginName
-                write-host $LoginName "added Domain Users"
-            }
+            #if (!($TestDomainUser.name.contains($TestUser.name))) {
+            #    #Add-ADGroupMember -Identity "Domain Users" -Member $LoginName
+            #    write-host $LoginName "added Domain Users"
+            #}
             if (!($StudentGroup.name.contains($TestUser.name))) {
                 #Add-ADGroupMember -Identity Students -Member $LoginName
                 write-host $LoginName "added Students Group"
