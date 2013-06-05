@@ -25,6 +25,9 @@
 import-module activedirectory
 $input = Import-CSV .\csv\student.csv
 
+write-host "Starting Student Creation Script"
+write-host
+
 ###############
 ### GLOBALS ###
 ###############
@@ -59,6 +62,9 @@ $9Group = Get-ADGroupMember -Identity "S-G_Group D"
 $10Group = Get-ADGroupMember -Identity "S-G_Group C"
 $11Group = Get-ADGroupMember -Identity "S-G_Group B"
 $12Group = Get-ADGroupMember -Identity "S-G_Group A"
+
+write-host "Completed importing groups"
+write-host
 
 ################################################
 ### Create / Edit / Disable student accounts ###
@@ -561,3 +567,6 @@ foreach($line in $input) {
         }
     }
 }
+
+write-host "Student Creation Script Finished"
+write-host

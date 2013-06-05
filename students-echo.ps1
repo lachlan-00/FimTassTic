@@ -519,8 +519,6 @@ foreach($line in $input) {
             $DATE = $DATE, "00:00:00"
             If ($DATE -gt $Termination) {
                 write-host "DISABLING ACCOUNT, '$($LoginName)'"
-                write-host $DATE
-                write-host $Termination
 
                 # Set user to confirm details
                 $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode)) }

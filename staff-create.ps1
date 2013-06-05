@@ -26,6 +26,9 @@ import-module activedirectory
 $input = Import-CSV  .\csv\telemf.csv
 $teacherinput = Import-CSV  .\csv\teacher.csv
 
+write-host "Starting Staff Creation Script"
+write-host
+
 ###############
 ### GLOBALS ###
 ###############
@@ -43,6 +46,9 @@ $TestStaff = Get-ADGroupMember -Identity "Staff"
 $TestAllStaff = Get-ADGroupMember -Identity "All Staff"
 $TestTeachers = Get-ADGroupMember -Identity "Teachers"
 $TestAllTeachers = Get-ADGroupMember -Identity "Teachers - All"
+
+write-host "Completed importing groups"
+write-host
 
 ##############################################
 ### Create / Edit / Disable Staff accounts ###
@@ -245,3 +251,6 @@ foreach($line in $teacherinput)
         }
     }
 }
+
+write-host "Staff Creation Script Finished"
+write-host
