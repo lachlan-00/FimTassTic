@@ -27,6 +27,11 @@ import-module activedirectory
 $input = Import-CSV  .\csv\telemf.csv
 $StudentInput = Import-CSV .\csv\student.csv
 
+write-host "### Starting Mailbox Echo Script"
+write-host
+write-host "### Parsing Staff File"
+write-host
+
 #############################################
 ### Create / Disable Staff Email Accounts ###
 #############################################
@@ -88,6 +93,9 @@ foreach($line in $input)
         }
     }
 }
+
+write-host "### Parsing Student File"
+write-host
 
 ###############################################
 ### Create / Disable Student Email Accounts ###
@@ -152,3 +160,6 @@ foreach($line in $StudentInput)
         }
     }
 }
+
+write-host "### Mailbox Echo Script Finished"
+write-host

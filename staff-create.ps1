@@ -26,7 +26,7 @@ import-module activedirectory
 $input = Import-CSV  .\csv\telemf.csv
 $teacherinput = Import-CSV  .\csv\teacher.csv
 
-write-host "Starting Staff Creation Script"
+write-host "### Starting Staff Creation Script"
 write-host
 
 ###############
@@ -41,13 +41,12 @@ $ReliefTeacherPath = "OU=Relief and Preservice Teachers,OU=Staff,OU=Curriculum U
 $TutorPath = "OU=Tutors,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $DisablePath = "OU=staff,OU=Disabled,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 # Get membership for group Membership Tests
-###$TestDomainUser = Get-ADGroupMember -Identity "Domain Users"
 $TestStaff = Get-ADGroupMember -Identity "Staff"
 $TestAllStaff = Get-ADGroupMember -Identity "All Staff"
 $TestTeachers = Get-ADGroupMember -Identity "Teachers"
 $TestAllTeachers = Get-ADGroupMember -Identity "Teachers - All"
 
-write-host "Completed importing groups"
+write-host "### Completed importing groups"
 write-host
 
 ##############################################
@@ -91,32 +90,53 @@ foreach($line in $input) {
     If ($Termination.length -eq 0) {
         # create basic user if you can't find one
         If (!(Get-ADUser -Filter { SamAccountName -eq $LoginName })) {
-            $TempLogin = (Get-Culture).TextInfo.ToLower($LoginName)
-            New-ADUser -SamAccountName $TempLogin -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "Abc123" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
+            $LoginName = (Get-Culture).TextInfo.ToLower($LoginName)
+            New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "Abc123" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
             Set-ADUser -Identity $LoginName -Description $Position -Office $Position -Title $Position
             write-host $LoginName, " created for ", $FullName
         }
 
+        # Set user to confirm details
+        $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Name -eq $FullName)) }
+        $TestPhone = (Get-ADUser -Identity $LoginName -Properties OfficePhone).OfficePhone
+        $TestDescription = (Get-ADUser -Identity $LoginName -Properties Description).Description
+
         # set additional user details if the user exists
-        If (Get-ADUser -Filter { SamAccountName -eq $LoginName }) {
+        If ($TestUser) {
             # Enable use if disabled
-            If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "False")) }) {
-                Set-ADUser -Identity $LoginName -Enabled $true
+            If (!($TestUser.Enabled)) {
+                #Set-ADUser -Identity $LoginName -Enabled $true
+                write-host "Enabling", $LoginName
             }
 
             # Set updateable object values
-            Set-ADUser -Identity $LoginName -Description $Position
-            ########Set-ADUser -Identity $LoginName -Description $Position -Office $Position -Title $Position
+
+            # Add Position if there is one
+            if ($Position -ne $TestDescription) {
+                write-host $LoginName, "setting position"
+                write-host $Position
+                write-host $TestDescription
+                write-host
+                Set-ADUser -Identity $LoginName -Description $Position ######## -Office $Position -Title $Position
+            }
 
             # Add Telephone number if there is one
-            if ($Telephone) {
-                Set-ADUser -Identity $LoginName -OfficePhone $Telephone
+            if ($Telephone -ne $TestPhone) {
+                If ($Telephone -eq $null) {
+                    if ($TestPhone -ne '690') {
+                        Set-ADUser -Identity $LoginName -OfficePhone '690'
+                        write-host $LoginName, "setting Telephone to Default (690)"
+                        write-host
+                    }
+                }
+                Else {
+                    Set-ADUser -Identity $LoginName -OfficePhone $Telephone
+                    write-host $LoginName, "setting Telephone to:", $Telephone
+                    write-host
+                }
             }
-            
-            # Set user to confirm details
-            $TestUser = Get-ADUser -Identity $LoginName
 
-            # Move user to the default OU if not already there
+            # Move user to their default OU if not already there
             if ($TestUser.distinguishedname.Contains($DisablePath)) {
                 Get-ADUser $LoginName | Move-ADObject -TargetPath $UserPath
                 write-host $LoginName "moved out of Disabled OU"
@@ -131,14 +151,6 @@ foreach($line in $input) {
             }
             
             # Check Group Membership
-            #if (!($TestDomainUser.name.contains($TestUser.name))) {
-            #    try {
-            #            Add-ADGroupMember -Identity "Domain Users" -Member $LoginName
-            #            write-host $LoginName "added Domain Users"
-            #        }
-            #        catch {}
-            #        finally {}
-            #}
             if (!($TestStaff.name.contains($TestUser.name))) {
                         Add-ADGroupMember -Identity "Staff" -Member $LoginName
                         write-host $LoginName "added Staff"
@@ -206,9 +218,21 @@ foreach($line in $input) {
                 # Disable The account
                 Set-ADUser -Identity $LoginName -Enabled $false
             }
+            Else {
+                write-host "Not Final Leaving Date", $FullName
+                write-host $DATE
+                write-host $Termination
+                write-host
+            }
         }
     }
 }
+
+write-host
+write-host "### Staff Creation Finished"
+write-host
+write-Host "### Starting Teacher Modification"
+write-host
 
 ###################################################################
 ### Create / Edit Teacher Info for Staff with existing accounts ###
@@ -252,5 +276,7 @@ foreach($line in $teacherinput)
     }
 }
 
-write-host "Staff Creation Script Finished"
+write-Host "### Teacher Modification Finished"
+write-host
+write-host "### Staff Creation Script Finished"
 write-host

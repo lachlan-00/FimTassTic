@@ -23,7 +23,10 @@
 ###############################################################################
 
 import-module activedirectory
-$input = Import-CSV .\csv\student.csv
+$input = Import-CSV ".\csv\student.csv"
+
+write-host "### Starting Student Echo Script"
+write-host
 
 ###############
 ### GLOBALS ###
@@ -49,7 +52,6 @@ $10Name = "S-G_Group C"
 $11Name = "S-G_Group B"
 $12Name = "S-G_Group A"
 # Get membership for group Membership Tests
-###$TestDomainUser = Get-ADGroupMember -Identity "Domain Users"
 $StudentGroup = Get-ADGroupMember -Identity "Students"
 $5Group = Get-ADGroupMember -Identity "S-G_Group H"
 $6Group = Get-ADGroupMember -Identity "S-G_Group G"
@@ -59,6 +61,9 @@ $9Group = Get-ADGroupMember -Identity "S-G_Group D"
 $10Group = Get-ADGroupMember -Identity "S-G_Group C"
 $11Group = Get-ADGroupMember -Identity "S-G_Group B"
 $12Group = Get-ADGroupMember -Identity "S-G_Group A"
+
+write-host "### Completed importing groups"
+write-host
 
 ###############################################
 ### Create / Edit /Disable student accounts ###
@@ -126,6 +131,9 @@ foreach($line in $input) {
         }
     $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
     $UserCode = (Get-Culture).TextInfo.ToUpper($line.stud_code.Trim())
+    If ($UserCode.Length -ne 5) {
+        $UserCode = "0${UserCode}"
+    }
     $HomeDrive = "\\vncfs01\studentdata$\" + $YearIdent + "\" + $LoginName
     $PreferredName = (Get-Culture).TextInfo.ToTitleCase($PreferredName)
     $Surname = (Get-Culture).TextInfo.ToTitleCase($Surname)
@@ -134,89 +142,7 @@ foreach($line in $input) {
     # Check for given name before testing  year identities
     If ($LoginName -notcontains $Test0) {
         If (Get-ADUser -Filter { SamAccountName -eq $Test0 }) {
-            #write-host "missing login", $LoginName
             $LoginName = $Test0
-        }
-    }
-    #check against old login name style (helps for end of year rollover)
-    $TestA = ("a" + $LoginName.Substring(1))
-    $TestB = ("b" + $LoginName.Substring(1))
-    $TestC = ("c" + $LoginName.Substring(1))
-    $TestD = ("d" + $LoginName.Substring(1))
-    $TestE = ("e" + $LoginName.Substring(1))
-    $TestF = ("f" + $LoginName.Substring(1))
-    $TestG = ("g" + $LoginName.Substring(1))
-    $TestH = ("h" + $LoginName.Substring(1))
-    If ($LoginName -notcontains $TestA) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestA }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestA
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\A\" + $LoginName
-            $Position = 'Year 12'
-        }
-    }
-    If ($LoginName -notcontains $TestB) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestB }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestB
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\B\" + $LoginName
-            $Position = 'Year 11'
-        }
-    }
-    If ($LoginName -notcontains $TestC) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestC }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestC
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\C\" + $LoginName
-            $Position = 'Year 10'
-        }
-    }
-    If ($LoginName -notcontains $TestD) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestD }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestD
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\D\" + $LoginName
-            $Position = 'Year 9'
-        }
-    }
-    If ($LoginName -notcontains $TestE) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestE }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestE
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\E\" + $LoginName
-            $Position = 'Year 8'
-        }
-    }
-    If ($LoginName -notcontains $TestF) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestF }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestF
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\F\" + $LoginName
-            $Position = 'Year 7'
-        }
-    }
-    If ($LoginName -notcontains $TestG) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestG }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestG
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\G\" + $LoginName
-            $Position = 'Year 6'
-        }
-    }
-    If ($LoginName -notcontains $TestH) {
-        If (Get-ADUser -Filter { SamAccountName -eq $TestH }) {
-            #write-host "missing login", $LoginName
-            $LoginName = $TestH
-            #write-host "missing login", $LoginName
-            $HomeDrive = "\\vncfs01\studentdata$\H\" + $LoginName
-            $Position ='Year 5'
         }
     }
 
@@ -236,36 +162,33 @@ foreach($line in $input) {
         
         # Create basic user if you can't find one
         If (!(Get-ADUser -Filter { (SamAccountName -eq $LoginName)})) {
-            #New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "Abc123" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
-            write-host "NEW USER", $($LoginName)
+            #New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "Abc123" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
+            write-host $LoginName, " created for ", $FullName
         }
         
+        # Set user to confirm details
+        $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode) -and (Name -eq $FullName)) }
+
         # set additional user details if the user exists
-        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode))}) {
+        If ($TestUser) {
             # Enable use if disabled
-            If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode) -and (Enabled -eq "False")) }) {
+            If (!($TestUser.Enabled)) {
                 #Set-ADUser -Identity $LoginName -Enabled $true
                 write-host "RE-ENABLING", $($LoginName)
             }
 
-            # Set updateable object values
-            #Set-ADUser -Identity $LoginName -Enabled $true -Description $UserCode -Office $YearGroup -Title "Student"
-            
-            # Set user to confirm details
-            $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode)) }
-
             # Move user to the default OU if not already there
             if (!($TestUser.distinguishedname.Contains($UserPath))) {
                 #Get-ADUser $LoginName | Move-ADObject -TargetPath $UserPath
-                write-host $LoginName "Taking From:" $TestUser.distinguishedname
+                write-host $LoginName
+                write-host "Taking From:" $TestUser.distinguishedname
                 write-host "Moving To:" $UserPath
             }
 
+            # Set Year Level and Title
+            #Set-ADUser -Identity $LoginName -Office $YearGroup -Title "Student - ${YEAR}"
+
             # Check Group Membership
-            #if (!($TestDomainUser.name.contains($TestUser.name))) {
-            #    #Add-ADGroupMember -Identity "Domain Users" -Member $LoginName
-            #    write-host $LoginName "added Domain Users"
-            #}
             if (!($StudentGroup.name.contains($TestUser.name))) {
                 #Add-ADGroupMember -Identity Students -Member $LoginName
                 write-host $LoginName "added Students Group"
@@ -496,6 +419,12 @@ foreach($line in $input) {
                 }
             }
         }
+        Else {
+            write-host "missing", $FullName
+            write-host $LoginName
+            write-host $UserCode
+            write-host
+        }
     }
 
     ######################################
@@ -504,7 +433,8 @@ foreach($line in $input) {
 
     Else {
         # Disable users with a termination date if they are still enabled
-        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode) -and (Enabled -eq "True")) }) {
+        $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode) -and (Name -eq $FullName)) }
+        If ($TestUser.Enabled) {
             $YEAR = [string](Get-Date).Year
             $MONTH = [string](Get-Date).Month
             If ($MONTH.length -eq 1) {
@@ -530,10 +460,6 @@ foreach($line in $input) {
                 }
 
                 # Check Group Membership
-                #if ($TestDomainUser.name.contains($TestUser.name)) {
-                #    #Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
-                #    write-host $LoginName "REMOVED Domain Users"
-                #}
                 if ($StudentGroup.name.contains($TestUser.name)) {
                     #Remove-ADGroupMember -Force -Identity "Students" -Member $LoginName
                     write-host $LoginName "REMOVED Students"
@@ -577,3 +503,6 @@ foreach($line in $input) {
         }
     }
 }
+
+write-host "### Student Echo Script Finished"
+write-host
