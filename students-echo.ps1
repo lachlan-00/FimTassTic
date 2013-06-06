@@ -70,6 +70,11 @@ write-host
 ###############################################
 
 foreach($line in $input) {
+
+    ################################
+    ### Configure User Variables ###
+    ################################
+
     # Get Year level information for groups and home drive
     $YearGroup = $line.year_grp
     IF ($YearGroup -eq "5") {
@@ -113,12 +118,13 @@ foreach($line in $input) {
         $ClassGroup = $12Name
     }
 
-    # pull remaining details
+    # Set lower case because powershell ignores uppercase word changes
     $PreferredName = (Get-Culture).TextInfo.ToLower($line.preferred_name.Trim())
     $GivenName = (Get-Culture).TextInfo.ToLower($line.given_name.Trim())
     $Surname = (Get-Culture).TextInfo.ToLower($line.surname.Trim())
-    $Position = 'Year', $YearGroup.Trim()
     $FullName =  (Get-Culture).TextInfo.ToTitleCase($PreferredName + " " + $Surname)
+
+    # Set Login and display names/text
     if (((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "").length -gt 3)
         {
         $LoginName = $YearIdent + '-' + ((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "").substring(0,4) + $PreferredName.substring(0,2)
@@ -129,22 +135,40 @@ foreach($line in $input) {
         $LoginName = $YearIdent + '-' + ((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "") + $PreferredName.substring(0,2)
         $Test0 = $YearIdent + '-' + ((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "") + $GivenName.substring(0,2)
         }
-    $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
-    $UserCode = (Get-Culture).TextInfo.ToUpper($line.stud_code.Trim())
-    If ($UserCode.Length -ne 5) {
-        $UserCode = "0${UserCode}"
-    }
-    $HomeDrive = "\\vncfs01\studentdata$\" + $YearIdent + "\" + $LoginName
-    $PreferredName = (Get-Culture).TextInfo.ToTitleCase($PreferredName)
-    $Surname = (Get-Culture).TextInfo.ToTitleCase($Surname)
-    $Termination = $line.dol.Trim()
 
-    # Check for given name before testing  year identities
+    # Check for given name
     If ($LoginName -notcontains $Test0) {
         If (Get-ADUser -Filter { SamAccountName -eq $Test0 }) {
             $LoginName = $Test0
         }
     }
+    $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
+
+    # Correct usercode if opened in Excel
+    $UserCode = (Get-Culture).TextInfo.ToUpper($line.stud_code.Trim())
+    If ($UserCode.Length -ne 5) {
+        $UserCode = "0${UserCode}"
+    }
+
+    # pull remaining details
+    $Position = 'Year', $YearGroup.Trim()
+    $HomeDrive = "\\vncfs01\studentdata$\" + $YearIdent + "\" + $LoginName
+
+    # Check Termination Dates
+    $Termination = $line.dol.Trim()
+    $YEAR = [string](Get-Date).Year
+    $MONTH = [string](Get-Date).Month
+    $DAY = [string](Get-Date).Day
+
+    # Format $Date Field to Match Termination Date
+    If ($MONTH.length -eq 1) {
+        $MONTH = "0${MONTH}"
+    }
+    If ($DAY.length -eq 1) {
+        $DAY = "0${DAY}"
+    }
+    $DATE = "${YEAR}-${MONTH}-${DAY}"
+    $DATE = $DATE, "00:00:00"
 
     ########################################
     ### Create / Modify Student Accounts ###
@@ -432,73 +456,66 @@ foreach($line in $input) {
     ######################################
 
     Else {
-        # Disable users with a termination date if they are still enabled
-        $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode) -and (Name -eq $FullName)) }
-        If ($TestUser.Enabled) {
-            $YEAR = [string](Get-Date).Year
-            $MONTH = [string](Get-Date).Month
-            If ($MONTH.length -eq 1) {
-                $MONTH = "0${MONTH}"
-            }
-            $DAY = [string](Get-Date).Day
-            If ($DAY.length -eq 1) {
-                $DAY = "0${DAY}"
-            }
 
-            $DATE = "${YEAR}-${MONTH}-${DAY}"
-            $DATE = $DATE, "00:00:00"
+        # Disable users with a termination date if they are still enabled
+        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True") -and (Name -eq $FullName)) }) {
+
+            # Terminate Students AFTER their Termination date
             If ($DATE -gt $Termination) {
                 write-host "DISABLING ACCOUNT, '$($LoginName)'"
 
                 # Set user to confirm details
                 $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode)) }
 
-                if (!($TestUser.distinguishedname.Contains($DisablePath))) {
-                    # Move to disabled user OU if not already there
-                    #Get-ADUser $LoginName | Move-ADObject -TargetPath $DisablePath
-                    write-host $LoginName "MOVED to Disabled OU"
-                }
+                If (!($TestUser -eq $null)) {
+                    if (!($TestUser.distinguishedname.Contains($DisablePath))) {
 
-                # Check Group Membership
-                if ($StudentGroup.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity "Students" -Member $LoginName
-                    write-host $LoginName "REMOVED Students"
-                }
-                if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $LoginName
-                    write-host $LoginName "REMOVED 5"
-                }
-                if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $LoginName
-                    write-host $LoginName "REMOVED 6"
-                }
-                if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $LoginName
-                    write-host $LoginName "REMOVED 7"
-                }
-                if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $LoginName
-                    write-host $LoginName "REMOVED 8"
-                }
-                if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $LoginName
-                    write-host $LoginName "REMOVED 9"
-                }
-                if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $LoginName
-                    write-host $LoginName "REMOVED 10"
-                }
-                if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $LoginName
-                    write-host $LoginName "REMOVED 11"
-                }
-                if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $LoginName
-                    write-host $LoginName "REMOVED 12"
-                }
+                        # Move to disabled user OU if not already there
+                        #Get-ADUser $LoginName | Move-ADObject -TargetPath $DisablePath
+                        write-host $LoginName "MOVED to Disabled OU"
+                    }
 
-                # Disable The account
-                #Set-ADUser -Identity $LoginName -Enabled $false
+                    # Check Group Membership
+                    if ($StudentGroup.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity "Students" -Member $LoginName
+                        write-host $LoginName "REMOVED Students"
+                    }
+                    if ($5Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $5Name -Member $LoginName
+                        write-host $LoginName "REMOVED 5"
+                    }
+                    if ($6Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $6Name -Member $LoginName
+                        write-host $LoginName "REMOVED 6"
+                    }
+                    if ($7Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $7Name -Member $LoginName
+                        write-host $LoginName "REMOVED 7"
+                    }
+                    if ($8Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $8Name -Member $LoginName
+                        write-host $LoginName "REMOVED 8"
+                    }
+                    if ($9Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $9Name -Member $LoginName
+                        write-host $LoginName "REMOVED 9"
+                    }
+                    if ($10Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $10Name -Member $LoginName
+                        write-host $LoginName "REMOVED 10"
+                    }
+                    if ($11Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $11Name -Member $LoginName
+                        write-host $LoginName "REMOVED 11"
+                    }
+                    if ($12Group.name.contains($TestUser.name)) {
+                        #Remove-ADGroupMember -Force -Identity $12Name -Member $LoginName
+                        write-host $LoginName "REMOVED 12"
+                    }
+
+                    # Disable The account
+                    #Set-ADUser -Identity $LoginName -Enabled $false
+                }
             }
         }
     }

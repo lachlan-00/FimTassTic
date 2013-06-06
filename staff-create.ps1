@@ -55,6 +55,10 @@ write-host
 
 foreach($line in $input) {
 
+    ################################
+    ### Configure User Variables ###
+    ################################
+
     # Set lower case because powershell ignores uppercase word changes
     $PreferredName = (Get-Culture).TextInfo.ToLower($line.prefer_name_text.Trim())
     $Surname = (Get-Culture).TextInfo.ToLower($line.surname_text.Trim())
@@ -111,7 +115,7 @@ foreach($line in $input) {
         }
 
         # Check Name Information
-        $TestUser = Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties CN
+        $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
         If ($TestUser) {
             If ($TestUser.GivenName -ne $PreferredName) {
                 write-host $TestUser.GivenName, "Changed to" $PreferredName
@@ -121,19 +125,20 @@ foreach($line in $input) {
                 write-host $TestUser.SurName, "Changed to" $SurName
                 Set-ADUser -Identity $LoginName -Surname $Surname
             }
-            If (($TestUser.Name -ne $FullName)) {
+            If ($TestUser.Name -ne $FullName) {
                 write-host $TestUser.Name, "Changed to" $FullName
                 Set-ADUser -Identity $LoginName -DisplayName $FullName
             }
             If ($TestUser.CN -ne $FullName) {
                  write-host $LoginName "Changed common name", $FullName
+                 write-host
             }
         }
 
         # Set user to confirm details
-        $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Name -eq $FullName)) }
-        $TestPhone = (Get-ADUser -Identity $LoginName -Properties OfficePhone).OfficePhone
-        $TestDescription = (Get-ADUser -Identity $LoginName -Properties Description).Description
+        $TestUser = (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Name -eq $FullName)) } -Properties *)
+        $TestPhone = $TestUser.OfficePhone
+        $TestDescription = $TestUser.Description
 
         # set additional user details if the user exists
         If ($TestUser) {
@@ -218,10 +223,6 @@ foreach($line in $input) {
                 }
 
                 # Check Group Membership
-                #if ($TestDomainUser.name.contains($TestUser.name)) {
-                #    Remove-ADGroupMember -Force -Identity "Domain users" -Member $LoginName
-                #    write-host $LoginName "REMOVED Domain Users"
-                #}
                 if ($TestStaff.name.contains($TestUser.name)) {
                     Remove-ADGroupMember -Identity "Staff" -Member $LoginName -Confirm:$false
                     write-host $LoginName "REMOVED Staff"
@@ -267,16 +268,18 @@ foreach($line in $teacherinput)
     $LoginName = (Get-Culture).TextInfo.ToLower($line.emp_code.Trim())
 
     If (($LoginName -ne $null) -and ($LoginName -ne '')) {
-        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
 
-            # Set user to confirm details
-            $TestUser = Get-ADUser -Identity $LoginName
-            $Description = (Get-ADUser -Identity $LoginName -Properties Description).Description
+        # Set user to confirm details
+        $TestUser = (Get-ADUser  -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }  -Properties *)
+        $Description = $TestUser.Description
+
+        If ($TestUser.Enabled) {
+
             # Move to Teacher OU if not already there
             if ($TestUser.distinguishedname.Contains($UserPath) -and (!($TestUser.distinguishedname.Contains($TeacherPath))) -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
                 If ($Description.Contains("Relief") -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
-                Get-ADUser $LoginName | Move-ADObject -TargetPath $ReliefTeacherPath
-                write-host $LoginName "moved to Relief Teacher OU"
+                    Get-ADUser $LoginName | Move-ADObject -TargetPath $ReliefTeacherPath
+                    write-host $LoginName "moved to Relief Teacher OU"
                 }
                 ElseIf (($Description.Contains("Tutor")) -and (!($TestUser.distinguishedname.Contains($TutorPath)))) {
                     Get-ADUser $LoginName | Move-ADObject -TargetPath $TutorPath
@@ -285,17 +288,17 @@ foreach($line in $teacherinput)
                 ElseIf (!($TestUser.distinguishedname.Contains($TeacherPath)) -and (!($Description.Contains("Tutor")))) {
                     Get-ADUser $LoginName | Move-ADObject -TargetPath $TeacherPath
                     write-host $LoginName "moved to Teacher OU"
-                    # Check Group Membership
-                    if (!($TestTeachers.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "Teachers" -Member $LoginName
-                        write-host $LoginName "ADDED Teachers"
-                    }
-                    if (!($TestAllTeachers.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "Teachers - All" -Member $LoginName
-                        write-host $LoginName "ADDED Teachers - All"
-                    }
                 }
-            }  
+            }
+            # Check Group Membership
+            if (!($TestTeachers.name.contains($TestUser.name))) {
+                Add-ADGroupMember -Identity "Teachers" -Member $LoginName
+                write-host $LoginName "ADDED Teachers"
+            }
+            if (!($TestAllTeachers.name.contains($TestUser.name))) {
+                Add-ADGroupMember -Identity "Teachers - All" -Member $LoginName
+                write-host $LoginName "ADDED Teachers - All"
+            }
         }
     }
 }

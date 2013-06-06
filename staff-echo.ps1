@@ -55,6 +55,10 @@ write-host
 
 foreach($line in $input) {
 
+    ################################
+    ### Configure User Variables ###
+    ################################
+
     # Set lower case because powershell ignores uppercase word changes
     $PreferredName = (Get-Culture).TextInfo.ToLower($line.prefer_name_text.Trim())
     $Surname = (Get-Culture).TextInfo.ToLower($line.surname_text.Trim())
@@ -111,7 +115,7 @@ foreach($line in $input) {
         }
 
         # Check Name Information
-        $TestUser = Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties CN
+        $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
         If ($TestUser) {
             If ($TestUser.GivenName -ne $PreferredName) {
                 write-host $TestUser.GivenName, "Changed to" $PreferredName
@@ -132,9 +136,9 @@ foreach($line in $input) {
         }
 
         # Set user to confirm details
-        $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Name -eq $FullName)) }
-        $TestPhone = (Get-ADUser -Identity $LoginName -Properties OfficePhone).OfficePhone
-        $TestDescription = (Get-ADUser -Identity $LoginName -Properties Description).Description
+        $TestUser = (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Name -eq $FullName)) } -Properties *)
+        $TestPhone = $TestUser.OfficePhone
+        $TestDescription = $TestUser.Description
 
         # set additional user details if the user exists
         If ($TestUser) {
@@ -208,10 +212,36 @@ foreach($line in $input) {
 
             # Terminate Staff AFTER their Termination date
             If ($DATE -gt $Termination) {
-                write-host "USER HAS LEFT", $FullName
-                write-host $DATE
-                write-host $Termination
-                write-host
+                write-host "DISABLING ACCOUNT, '$($LoginName)'"
+
+                # Set user to confirm details
+                $TestUser = Get-ADUser -Identity $LoginName
+
+                if (!($TestUser.distinguishedname.Contains($DisablePath))) {
+                    # Move to disabled user OU if not already there
+                    #Get-ADUser $LoginName | Move-ADObject -TargetPath $DisablePath
+                }
+
+                # Check Group Membership
+                if ($TestStaff.name.contains($TestUser.name)) {
+                    #Remove-ADGroupMember -Identity "Staff" -Member $LoginName -Confirm:$false
+                    write-host $LoginName "REMOVED Staff"
+                }
+                if ($TestAllStaff.name.contains($TestUser.name)) {
+                    #Remove-ADGroupMember -Identity "All Staff" -Member $LoginName -Confirm:$false
+                    write-host $LoginName "REMOVED allstaff"
+                }
+                if ($TestTeachers.name.contains($TestUser.name)) {
+                    #Remove-ADGroupMember -Identity "Teachers" -Member $LoginName -Confirm:$false
+                    write-host $LoginName "REMOVED Teachers"
+                }
+                if ($TestAllTeachers.name.contains($TestUser.name)) {
+                    #Remove-ADGroupMember -Identity "Teachers - All" -Member $LoginName -Confirm:$false
+                    write-host $LoginName "REMOVED Teachers - All"
+                }
+            
+                # Disable The account
+                #Set-ADUser -Identity $LoginName -Enabled $false
             }
             Else {
                 write-host "Not Final Leaving Date", $FullName
@@ -238,38 +268,37 @@ foreach($line in $teacherinput)
     $LoginName = (Get-Culture).TextInfo.ToLower($line.emp_code.Trim())
 
     If (($LoginName -ne $null) -and ($LoginName -ne '')) {
-        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
 
-            $TestUser = Get-ADUser -Identity $LoginName
-            $Description = (Get-ADUser -Identity $LoginName -Properties Description).Description
+        # Set user to confirm details
+        $TestUser = (Get-ADUser  -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }  -Properties *)
+        $Description = $TestUser.Description
+
+        If ($TestUser.Enabled) {
+
+            # Move to Teacher OU if not already there
             if ($TestUser.distinguishedname.Contains($UserPath) -and (!($TestUser.distinguishedname.Contains($TeacherPath))) -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
                 If ($Description.Contains("Relief") -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
                     #Get-ADUser $LoginName | Move-ADObject -TargetPath $ReliefTeacherPath
-                    write-host $LoginName, "moved to Relief Teacher OU"
+                    write-host $LoginName "moved to Relief Teacher OU"
                 }
                 ElseIf (($Description.Contains("Tutor")) -and (!($TestUser.distinguishedname.Contains($TutorPath)))) {
                     #Get-ADUser $LoginName | Move-ADObject -TargetPath $TutorPath
-                    write-host $LoginName, "Teacher moved to Music Tutor OU"
+                    write-host $LoginName "moved to Music Tutor OU"
                 }
-                ElseIf ((!($TestUser.distinguishedname.Contains($TeacherPath)) -and ($Description.Contains("Teacher")) -and (!($Description.Contains("Tutor"))))) {
+                ElseIf (!($TestUser.distinguishedname.Contains($TeacherPath)) -and (!($Description.Contains("Tutor")))) {
                     #Get-ADUser $LoginName | Move-ADObject -TargetPath $TeacherPath
-                    write-host $LoginName, "moved to Teacher OU"
-                    write-host $Description
-                    $TEST = Get-ADUser -Identity $LoginName -Properties MemberOf
-                    # Check Group Membership
-                    if (!($TEST.memberof.Contains("CN=Teachers,OU=Security,OU=Curriculum Groups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"))) {
-                        #Add-ADGroupMember -Identity Teachers -Member $LoginName
-                        write-host "adding teachers group", $LoginName
-                    }
-                    if (!($TEST.memberof.Contains("CN=Teachers - All,OU=Distribution,OU=Curriculum Groups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"))) {
-                        #Add-ADGroupMember -Identity "Teachers - All" -Member $LoginName
-                        write-host "adding teachers - all ", $LoginName
-                    }
-                    write-host
+                    write-host $LoginName "moved to Teacher OU"
                 }
             }
-
-            
+            # Check Group Membership
+            if (!($TestTeachers.name.contains($TestUser.name))) {
+                #Add-ADGroupMember -Identity "Teachers" -Member $LoginName
+                write-host $LoginName "ADDED Teachers"
+            }
+            if (!($TestAllTeachers.name.contains($TestUser.name))) {
+                #Add-ADGroupMember -Identity "Teachers - All" -Member $LoginName
+                write-host $LoginName "ADDED Teachers - All"
+            }
         }
     }
 }
