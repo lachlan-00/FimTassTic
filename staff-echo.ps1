@@ -55,9 +55,8 @@ write-host
 
 foreach($line in $input) {
 
-    # Lower set lower case because powershell ignores uppercase words
+    # Set lower case because powershell ignores uppercase word changes
     $PreferredName = (Get-Culture).TextInfo.ToLower($line.prefer_name_text.Trim())
-    $GivenName = (Get-Culture).TextInfo.ToLower($line.given_names_text.Trim())
     $Surname = (Get-Culture).TextInfo.ToLower($line.surname_text.Trim())
     If (($line.position_title.Trim() -ne $null) -and ($line.position_title.Trim() -ne '')) {
         $Position = (Get-Culture).TextInfo.ToLower($line.position_title.Trim())
@@ -67,21 +66,36 @@ foreach($line in $input) {
     }
 
     # Set Login and display names/text
-    $FullName =  (Get-Culture).TextInfo.ToTitleCase($PreferredName + " " + $Surname)
-    $LoginName = (Get-Culture).TextInfo.ToUpper($line.emp_code.Trim())
-    $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
-    $UserCode = $LoginName
-    $HomeDrive = "\\vncfs01\staffdata$\" + $LoginName
     $PreferredName = (Get-Culture).TextInfo.ToTitleCase($PreferredName)
     $Surname = (Get-Culture).TextInfo.ToTitleCase($Surname)
-    $Position = (Get-Culture).TextInfo.ToTitleCase($Position.Trim())
+    $FullName =  "${PreferredName} ${Surname}"
 
-    # pull remaining details
-    $Termination = $line.term_date.Trim()
+    $LoginName = (Get-Culture).TextInfo.ToUpper($line.emp_code.Trim())
+    $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
+
+    # Pull remaining details
+    $Position = (Get-Culture).TextInfo.ToTitleCase($Position.Trim())
+    $HomeDrive = "\\vncfs01\staffdata$\" + $LoginName
     $Telephone = $line.phone_w_text.Trim()
     If ($Telephone.length -le 1) {
         $Telephone = $null
     }
+
+    # Check Termination Dates
+    $Termination = $line.term_date.Trim()
+    $YEAR = [string](Get-Date).Year
+    $MONTH = [string](Get-Date).Month
+    $DAY = [string](Get-Date).Day
+
+    # Format $Date Field to Match Termination Date
+    If ($MONTH.length -eq 1) {
+        $MONTH = "0${MONTH}"
+    }
+    If ($DAY.length -eq 1) {
+        $DAY = "0${DAY}"
+    }
+    $DATE = "${YEAR}-${MONTH}-${DAY}"
+    $DATE = $DATE, "00:00:00"
 
     ######################################
     ### Create / Modify Staff Accounts ###
@@ -95,7 +109,28 @@ foreach($line in $input) {
             #Set-ADUser -Identity $LoginName -Description $Position -Office $Position -Title $Position
             write-host $LoginName, " created for ", $FullName
         }
-        
+
+        # Check Name Information
+        $TestUser = Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties CN
+        If ($TestUser) {
+            If ($TestUser.GivenName -ne $PreferredName) {
+                write-host $TestUser.GivenName, "Changed to" $PreferredName
+                #Set-ADUser -Identity $LoginName -GivenName $PreferredName
+            }
+            If ($TestUser.Surname -ne $Surname) {
+                write-host $TestUser.SurName, "Changed to" $SurName
+                #Set-ADUser -Identity $LoginName -Surname $Surname
+            }
+            If (($TestUser.Name -ne $FullName)) {
+                write-host $TestUser.Name, "Changed to" $FullName
+                #Set-ADUser -Identity $LoginName -DisplayName $FullName
+            }
+            If ($TestUser.CN -ne $FullName) {
+                 write-host $LoginName "Changed common name", $FullName
+                 write-host
+            }
+        }
+
         # Set user to confirm details
         $TestUser = Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Name -eq $FullName)) }
         $TestPhone = (Get-ADUser -Identity $LoginName -Properties OfficePhone).OfficePhone
@@ -152,11 +187,11 @@ foreach($line in $input) {
             
             # Check Group Membership
             if (!($TestStaff.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "Staff" -Member $LoginName
+                        #Add-ADGroupMember -Identity "Staff" -Member $LoginName
                         write-host $LoginName "added Staff"
             }
             if (!($TestAllStaff.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "All Staff" -Member $LoginName
+                        #Add-ADGroupMember -Identity "All Staff" -Member $LoginName
                         write-host $LoginName "added allstaff"
             }
         }
@@ -170,18 +205,8 @@ foreach($line in $input) {
 
         # Disable users with a termination date if they are still enabled
         If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
-            $YEAR = [string](Get-Date).Year
-            $MONTH = [string](Get-Date).Month
-            If ($MONTH.length -eq 1) {
-                $MONTH = "0${MONTH}"
-            }
-            $DAY = [string](Get-Date).Day
-            If ($DAY.length -eq 1) {
-                $DAY = "0${DAY}"
-            }
 
-            $DATE = "${YEAR}-${MONTH}-${DAY}"
-            $DATE = $DATE, "00:00:00"
+            # Terminate Staff AFTER their Termination date
             If ($DATE -gt $Termination) {
                 write-host "USER HAS LEFT", $FullName
                 write-host $DATE
