@@ -44,7 +44,9 @@ foreach($line in $input)
     # Check for staff who have left
     $Termination = $line.term_date.Trim()
     
-    ### Process Current Users ###
+    #############################
+    ### Process Current Staff ###
+    #############################
     
     If ($Termination.length -eq 0) {
         If (Get-ADUser -Filter { (SamAccountName -eq $LoginName) }) {
@@ -59,7 +61,9 @@ foreach($line in $input)
         }
     }
 
-    ### Process Terminated Users ###
+    ################################
+    ### Process Terminated Staff ###
+    ################################
     
     Else {
         $YEAR = [string](Get-Date).Year
@@ -106,10 +110,17 @@ foreach($line in $StudentInput)
     # Get login name for processing
     $LoginName = (Get-Culture).TextInfo.ToLower($line.stud_code.Trim())
 
+    # Correct LoginName if opened in Excel
+    If ($LoginName.Length -ne 5) {
+            $LoginName = "0${UserCode}"
+    }
+
     # Check for students who have left
     $Termination = $line.dol.Trim()
     
-    ### Process Current Users ###
+    ################################
+    ### Process Current Students ###
+    ################################
     
     If ($Termination.length -eq 0) {
         If (Get-ADUser -Filter { (SamAccountName -eq $LoginName) }) {
@@ -124,7 +135,9 @@ foreach($line in $StudentInput)
         }
     }
 
-    ### Process Terminated Users ###
+    ###################################
+    ### Process Terminated Students ###
+    ###################################
     
     Else {
         $YEAR = [string](Get-Date).Year
@@ -138,7 +151,8 @@ foreach($line in $StudentInput)
         }
 
         $DATE = "${YEAR}-${MONTH}-${DAY}"
-        $DATE = $DATE, "00:00:00"
+        $DATE = "${DATE} 00:00:00"
+
         If ($DATE -gt $Termination) {
             If (Get-ADUser -Filter { (SamAccountName -eq $LoginName) }) {
                 write-host $LoginName, "staff"
