@@ -167,14 +167,14 @@ foreach($line in $input) {
     }
 
     # Replace Common Acronyms and name spellings
-    $Surname = $Surname -replace "O'c", "O'C"
-    $Surname = $Surname -replace "O'd", "O'D"
-    $Surname = $Surname -replace "O'k", "O'K"
-    $Surname = $Surname -replace "O'n", "O'N"
-    $Surname = $Surname -replace "O'r", "O'R"
-    $Surname = $Surname -replace "De Waa", "de Waa"
+    $Surname = $Surname -replace "D'a", "D'A"
+    $Surname = $Surname -replace "De L", "de L"
+    $Surname = $Surname -replace "De S", "de S"
+    $Surname = $Surname -replace "De W", "de W"
+    $Surname = $Surname -replace "Macl", "MacL"
     $Surname = $Surname -replace "Mcb", "McB"
     $Surname = $Surname -replace "Mcc", "McC"
+    $Surname = $Surname -replace "Mcd", "McD"
     $Surname = $Surname -replace "Mcg", "McG"
     $Surname = $Surname -replace "Mci", "McI"
     $Surname = $Surname -replace "Mck", "McK"
@@ -182,7 +182,12 @@ foreach($line in $input) {
     $Surname = $Surname -replace "Mcm", "McM"
     $Surname = $Surname -replace "Mcn", "McN"
     $Surname = $Surname -replace "Mcp", "McP"
-    $Surname = $Surname -replace "Macl", "MacL"
+    $Surname = $Surname -replace "Mcw", "McW"
+    $Surname = $Surname -replace "O'c", "O'C"
+    $Surname = $Surname -replace "O'd", "O'D"
+    $Surname = $Surname -replace "O'k", "O'K"
+    $Surname = $Surname -replace "O'n", "O'N"
+    $Surname = $Surname -replace "O'r", "O'R"
 
     $FullName =  ($PreferredName + " " + $Surname)
     $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
