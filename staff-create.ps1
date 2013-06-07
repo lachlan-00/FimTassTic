@@ -59,22 +59,63 @@ foreach($line in $input) {
     ### Configure User Variables ###
     ################################
 
-    # Set lower case because powershell ignores uppercase word changes
-    $PreferredName = (Get-Culture).TextInfo.ToLower($line.prefer_name_text.Trim())
-    $Surname = (Get-Culture).TextInfo.ToLower($line.surname_text.Trim())
-    If (($line.position_title.Trim() -ne $null) -and ($line.position_title.Trim() -ne '')) {
-        $Position = (Get-Culture).TextInfo.ToLower($line.position_title.Trim())
+    # Set lower case because powershell ignores uppercase word changes to title case
+    $PreferredName = (Get-Culture).TextInfo.ToUpper($line.prefer_name_text.Trim())
+    $Surname = (Get-Culture).TextInfo.ToUpper($line.surname_text.Trim())
+    $Position = (Get-Culture).TextInfo.ToUpper($line.position_title.Trim())
+    $Position2 = (Get-Culture).TextInfo.ToUpper($line.position_text.Trim())
+
+    if ($PreferredName -eq $line.prefer_name_text.Trim()) {
+        $PreferredName = (Get-Culture).TextInfo.ToLower($PreferredName)
+        $PreferredName = (Get-Culture).TextInfo.ToTitleCase($PreferredName)
     }
-    Elseif (($line.position_text.Trim() -ne $null) -and ($line.position_text.Trim() -ne '')) {
-        $Position = (Get-Culture).TextInfo.ToLower($line.position_text.Trim())
+    Else {
+        $PreferredName = ($line.prefer_name_text.Trim())
+    }
+    if (($Surname) -eq $line.surname_text.Trim()) {
+        $Surname = (Get-Culture).TextInfo.ToLower($Surname)
+        $Surname = (Get-Culture).TextInfo.ToTitleCase($Surname)
+    }
+    Else {
+        $Surname = ($line.surname_text.Trim())
+    }
+    If (($Position -ne $null) -and ($Position -ne '')) {
+        if (($Position) -eq $line.position_title.Trim()) {
+            $Position = (Get-Culture).TextInfo.ToLower($Position)
+            $Position = (Get-Culture).TextInfo.ToTitleCase($Position)
+            }
+        Else {
+            $Position = ($line.position_title.Trim())
+        }
+    }
+    Elseif (($Position2 -ne $null) -and ($Position2 -ne '')) {
+        if (($Position2) -eq $line.position_text.Trim()) {
+            $Position2 = (Get-Culture).TextInfo.ToLower($Position2)
+            $Position2 = (Get-Culture).TextInfo.ToTitleCase($Position2)
+            $Position = $Position2
+            }
+        Else {
+            $Position = ($line.position_text.Trim())
+        }
     }
 
-    # Set Login and display names/text
-    $PreferredName = (Get-Culture).TextInfo.ToTitleCase($PreferredName)
-    $Surname = (Get-Culture).TextInfo.ToTitleCase($Surname)
+    # Replace Common Acronyms and name spellings
+    $Position = $Position -replace "Esl", "ESL"
+    $Position = $Position -replace "Cic", "CIC"
+    $Position = $Position -replace "Ict", "ICT"
+    $Position = $Position -replace " Of ", " of "
+    $Position = $Position -replace " To ", " to "
+    $Position = $Position -replace " The ", " the "
+    $Surname = $Surname -replace "O'n", "O'N"
+    $Surname = $Surname -replace "O'd", "O'D"
+    $Surname = $Surname -replace "De Waa", "de Waa"
+    $Surname = $Surname -replace "Mcc", "McC"
+    $Surname = $Surname -replace "Mcg", "McG"
+    $Surname = $Surname -replace "Mcl", "McL"
+    $Surname = $Surname -replace "Mcn", "McN"
+
     $FullName =  "${PreferredName} ${Surname}"
-
-    $LoginName = (Get-Culture).TextInfo.ToUpper($line.emp_code.Trim())
+    $LoginName = (Get-Culture).TextInfo.ToLower($line.emp_code.Trim())
     $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
 
     # Pull remaining details
@@ -117,19 +158,19 @@ foreach($line in $input) {
         # Check Name Information
         $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
         If ($TestUser) {
-            If ($TestUser.GivenName -ne $PreferredName) {
+            If ($TestUser.GivenName -cne $PreferredName) {
                 write-host $TestUser.GivenName, "Changed to" $PreferredName
                 Set-ADUser -Identity $LoginName -GivenName $PreferredName
             }
-            If ($TestUser.Surname -ne $Surname) {
+            If ($TestUser.Surname -cne $Surname) {
                 write-host $TestUser.SurName, "Changed to" $SurName
                 Set-ADUser -Identity $LoginName -Surname $Surname
             }
-            If ($TestUser.Name -ne $FullName) {
+            If ($TestUser.Name -cne $FullName) {
                 write-host $TestUser.Name, "Changed to" $FullName
                 Set-ADUser -Identity $LoginName -DisplayName $FullName
             }
-            If ($TestUser.CN -ne $FullName) {
+            If ($TestUser.CN -cne $FullName) {
                  write-host $LoginName "Changed common name", $FullName
                  write-host
             }
@@ -148,10 +189,8 @@ foreach($line in $input) {
                 write-host "Enabling", $LoginName
             }
 
-            # Set updateable object values
-
             # Add Position if there is one
-            if ($Position -ne $TestDescription) {
+            if (!($Position -ceq $TestDescription)) {
                 write-host $LoginName, "setting position"
                 write-host $Position
                 write-host $TestDescription

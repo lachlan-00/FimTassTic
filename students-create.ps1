@@ -119,10 +119,27 @@ foreach($line in $input) {
     }
 
     # Set lower case because powershell ignores uppercase word changes
-    $PreferredName = (Get-Culture).TextInfo.ToLower($line.preferred_name.Trim())
-    $GivenName = (Get-Culture).TextInfo.ToLower($line.given_name.Trim())
-    $Surname = (Get-Culture).TextInfo.ToLower($line.surname.Trim())
-    $FullName =  (Get-Culture).TextInfo.ToTitleCase($PreferredName + " " + $Surname)
+    if ((Get-Culture).TextInfo.ToUpper($line.preferred_name.Trim()) -eq $line.preferred_name.Trim()) {
+        $PreferredName = (Get-Culture).TextInfo.ToLower($line.preferred_name.Trim())
+        $PreferredName = (Get-Culture).TextInfo.ToTitleCase($line.preferred_name.Trim())
+    }
+    Else {
+        $PreferredName = ($line.preferred_name.Trim())
+    }
+    if ((Get-Culture).TextInfo.ToUpper($line.given_name.Trim()) -eq $line.given_name.Trim()) {
+        $GivenName = (Get-Culture).TextInfo.ToLower($line.given_name.Trim())
+        $GivenName = (Get-Culture).TextInfo.ToTitleCase($line.given_name.Trim())
+    }
+    Else {
+        $GivenName = ($line.given_name.Trim())
+    }
+    if ((Get-Culture).TextInfo.ToUpper($line.surname.Trim()) -eq $line.surname.Trim()) {
+        $Surname = (Get-Culture).TextInfo.ToLower($line.surname.Trim())
+        $Surname = (Get-Culture).TextInfo.ToTitleCase($line.surname.Trim())
+    }
+    Else {
+        $Surname = ($line.surname.Trim())
+    }
 
     # Set Login and display names/text
     if (((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "").length -gt 3)
@@ -139,9 +156,35 @@ foreach($line in $input) {
     # Check for given name
     If ($LoginName -notcontains $Test0) {
         If (Get-ADUser -Filter { SamAccountName -eq $Test0 }) {
-            $LoginName = $Test0
+            $LoginName = (Get-Culture).TextInfo.ToLower($Test0)
+        }
+        Else {
+            $LoginName = (Get-Culture).TextInfo.ToLower($LoginName)
         }
     }
+    Else {
+        $LoginName = (Get-Culture).TextInfo.ToLower($LoginName)
+    }
+
+    # Replace Common Acronyms and name spellings
+    $Surname = $Surname -replace "O'c", "O'C"
+    $Surname = $Surname -replace "O'd", "O'D"
+    $Surname = $Surname -replace "O'k", "O'K"
+    $Surname = $Surname -replace "O'n", "O'N"
+    $Surname = $Surname -replace "O'r", "O'R"
+    $Surname = $Surname -replace "De Waa", "de Waa"
+    $Surname = $Surname -replace "Mcb", "McB"
+    $Surname = $Surname -replace "Mcc", "McC"
+    $Surname = $Surname -replace "Mcg", "McG"
+    $Surname = $Surname -replace "Mci", "McI"
+    $Surname = $Surname -replace "Mck", "McK"
+    $Surname = $Surname -replace "Mcl", "McL"
+    $Surname = $Surname -replace "Mcm", "McM"
+    $Surname = $Surname -replace "Mcn", "McN"
+    $Surname = $Surname -replace "Mcp", "McP"
+    $Surname = $Surname -replace "Macl", "MacL"
+
+    $FullName =  ($PreferredName + " " + $Surname)
     $UserPrincipalName = $LoginName + "@villanova.vnc.qld.edu.au"
 
     # Correct usercode if opened in Excel
@@ -188,6 +231,27 @@ foreach($line in $input) {
         If (!(Get-ADUser -Filter { SamAccountName -eq $LoginName })) {
             New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "Abc123" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
             write-host $LoginName, " created for ", $FullName
+        }
+
+        # Check Name Information
+        $TestUser = (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Description -eq $UserCode)) } -Properties *)
+        If ($TestUser) {
+            If ($TestUser.GivenName -cne $PreferredName) {
+                write-host $TestUser.GivenName, "Changed to" $PreferredName
+                Set-ADUser -Identity $LoginName -GivenName $PreferredName
+            }
+            If ($TestUser.Surname -cne $Surname) {
+                write-host $TestUser.SurName, "Changed to" $SurName
+                Set-ADUser -Identity $LoginName -Surname $Surname
+            }
+            If (($TestUser.Name -cne $FullName)) {
+                write-host $TestUser.Name, "Changed to" $FullName
+                Set-ADUser -Identity $LoginName -DisplayName $FullName
+            }
+            If ($TestUser.CN -cne $FullName) {
+                 write-host $LoginName "Changed common name", $FullName
+                 write-host
+            }
         }
         
         # Set user to confirm details
