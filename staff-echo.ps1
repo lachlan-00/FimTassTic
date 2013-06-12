@@ -36,8 +36,9 @@ write-host
 
 # OU paths for differnt user types
 $UserPath = "OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$ITPath = "OU=IT Staff,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $TeacherPath = "OU=Teachers,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
-$NonTeacherPath = "OU=Teachers,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$NonTeacherPath = "OU=Non Teaching,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $ReliefTeacherPath = "OU=Relief and Preservice Teachers,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $TutorPath = "OU=Tutors,OU=Staff,OU=Curriculum Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $DisablePath = "OU=staff,OU=Disabled,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
@@ -124,7 +125,24 @@ foreach($line in $input) {
             }
         }
 
+        IF (($Position2 -contains "Music Tutor") -or ($Position2 -contains "Relief Teacher") -or ($Position2 -contains "Teacher Relief")) {
+            $Position2 = (Get-Culture).TextInfo.ToLower($Position2)
+            $Position2 = (Get-Culture).TextInfo.ToTitleCase($Position2)
+            If ($Position2 -eq "Teacher Relief") {
+                $Position = "Relief Teacher"
+            }
+            Else {
+                $Position = $Position2
+            }
+        }
+
         # Replace Common Acronyms and name spellings
+        $Position = $Position -replace "Ict", "ICT"
+        $Position = $Position -replace "Aic", "AIC"
+        $Position = $Position -replace "Cic", "CIC"
+        $Position = $Position -replace " Of ", " of "
+        $Position = $Position -replace " To ", " to "
+        $Position = $Position -replace " The ", " the "
         $Surname = $Surname -replace "D'a", "D'A"
         $Surname = $Surname -replace "De L", "de L"
         $Surname = $Surname -replace "De S", "de S"
@@ -150,7 +168,6 @@ foreach($line in $input) {
         # Set remaining details
         $FullName =  "${PreferredName} ${Surname}"
         $UserPrincipalName = "${LoginName}@villanova.vnc.qld.edu.au"
-        $Position = (Get-Culture).TextInfo.ToTitleCase($Position.Trim())
         $HomeDrive = "\\vncfs01\staffdata$\${LoginName}"
         $Telephone = $line.phone_w_text.Trim()
         If ($Telephone.length -le 1) {
@@ -170,11 +187,22 @@ foreach($line in $input) {
 
         # Set user to confirm details
         $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-        $TestPhone = $TestUser.OfficePhone
-        $TestDescription = $TestUser.Description
 
-        # Check Name Information
+        # set additional user details if the user exists
         If ($TestUser) {
+
+            # Get user info
+            $TestPhone = $TestUser.OfficePhone
+            $TestDescription = $TestUser.Description
+            $TestTitle = $TestUser.Title
+            $TestPath = ($TestUser.distinguishedname.Contains($UserPath))
+            $TestTeacherPath = ($TestUser.distinguishedname.Contains($TeacherPath))
+            $TestNonTeacherPath = ($TestUser.distinguishedname.Contains($NonTeacherPath))
+            $TestTutorPath = ($TestUser.distinguishedname.Contains($TutorPath))
+            $TestITPath = ($TestUser.distinguishedname.Contains($ITPath))
+            $TestReliefTeacherPath = ($TestUser.distinguishedname.Contains($ReliefTeacherPath))
+
+            # Check Name Information
             If ($TestUser.GivenName -cne $PreferredName) {
                 write-host $TestUser.GivenName, "Changed Given Name to ${PreferredName}"
                 #Set-ADUser -Identity $TestUser.SamAccountName -GivenName $PreferredName
@@ -191,10 +219,7 @@ foreach($line in $input) {
                  write-host $TestUser.SamAccountName "Changed Common Name ${FullName}"
                  write-host
             }
-        }
 
-        # set additional user details if the user exists
-        If ($TestUser) {
             # Enable use if disabled
             If (!($TestUser.Enabled)) {
                 #Set-ADUser -Identity $TestUser.SamAccountName -Enabled $true
@@ -208,6 +233,19 @@ foreach($line in $input) {
                 write-host "OLD ${TestDescription}"
                 write-host
                 ########Set-ADUser -Identity $TestUser.SamAccountName -Description $Position -Office $Position -Title $Position
+            }
+            If (!( $TestTitle)) {
+                #Set-ADUser -Identity $TestUser.SamAccountName -Title $Position
+                write-host $TestUser.Name, "Missing Title"
+                write-host $Position
+                write-host
+            }
+
+            # Set Department to identify current staff
+            If (!($TestUser.Department) -ceq ("Staff ${DAY}-${MONTH}-${YEAR}")) {
+                #Set-ADUser -Identity $TestUser.SamAccountName -Department "Staff ${DAY}-${MONTH}-${YEAR}"
+                write-host $TestUser.Name, "Setting Position:", $TestUser.Department
+                write-host "Staff ${DAY}-${MONTH}-${YEAR}"
             }
 
             # Add Telephone number if there is one
@@ -227,17 +265,23 @@ foreach($line in $input) {
             }
 
             # Move user to their default OU if not already there
-            if ($TestUser.distinguishedname.Contains($DisablePath)) {
+            if ($TestUser.distinguishedname -Contains $DisablePath) {
                 #Get-ADUser $TestUser.SamAccountName | Move-ADObject -TargetPath $UserPath
                 write-host $TestUser.SamAccountName "moved out of Disabled OU"
             }
-            ElseIf ($Position.Contains("Relief") -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
+            ElseIf (($TestUser.Description -Contains "Relief Teacher") -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
                 #Get-ADUser $TestUser.SamAccountName | Move-ADObject -TargetPath $ReliefTeacherPath
                 write-host $TestUser.SamAccountName "moved to Relief Teacher OU"
             }
-            ElseIf (($Position.Contains("Tutor")) -and (!($TestUser.distinguishedname.Contains($TutorPath)))) {
+            ElseIf (($TestUser.Description -Contains "Tutor") -and (!($TestUser.distinguishedname.Contains($TutorPath)))) {
                 #Get-ADUser $TestUser.SamAccountName | Move-ADObject -TargetPath $TutorPath
                 write-host $TestUser.SamAccountName "moved to Music Tutor OU"
+            }
+            ElseIf (($TestPath -and (!($TestTeacherPath))) -and (!($TestNonTeacherPath)) -and (!($TestITPath)) -and (!($TestTutorPath)) -and (!($TestReliefTeacherPath))) {
+                #Get-ADUser $TestUser.SamAccountName | Move-ADObject -TargetPath $NonTeacherPath
+                write-host $TestUser.Name "moved to non-teaching"
+                write-host $TestUser.DistinguishedName
+                write-host
             }
             
             # Check Group Membership
