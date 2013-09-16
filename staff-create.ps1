@@ -47,6 +47,7 @@ $TestStaff = Get-ADGroupMember -Identity "Staff"
 $TestAllStaff = Get-ADGroupMember -Identity "All Staff"
 $TestTeachers = Get-ADGroupMember -Identity "Teachers"
 $TestAllTeachers = Get-ADGroupMember -Identity "Teachers - All"
+$OwncloudGroup = Get-ADGroupMember -Identity "CN=owncloud_staff,OU=owncloud,OU=Security,OU=Curriculum Groups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 # Get Date and Format Field to Match Termination Date
 $YEAR = [string](Get-Date).Year
 $MONTH = [string](Get-Date).Month
@@ -293,6 +294,10 @@ foreach($line in $input) {
                         Add-ADGroupMember -Identity "All Staff" -Member $TestUser.SamAccountName
                         write-host $TestUser.SamAccountName "added allstaff"
             }
+            if (!($OwncloudGroup.name.contains($TestUser.name))) {
+                        Add-ADGroupMember -Identity "CN=owncloud_staff,OU=owncloud,OU=Security,OU=Curriculum Groups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au" -Member $TestUser.SamAccountName
+                        write-host $TestUser.SamAccountName "added owncloud"
+            }
         }
     }
 
@@ -336,6 +341,10 @@ foreach($line in $input) {
                 if ($TestAllTeachers.name.contains($TestUser.name)) {
                     Remove-ADGroupMember -Identity "Teachers - All" -Member $TestUser.SamAccountName -Confirm:$false
                     write-host $TestUser.SamAccountName "REMOVED Teachers - All"
+                }
+                if ($OwncloudGroup.name.contains($TestUser.name)) {
+                    Remove-ADGroupMember -Identity "owncloud_staff" -Member $TestUser.SamAccountName -Confirm:$false
+                    write-host $TestUser.SamAccountName "REMOVED owncloud"
                 }
             
                 # Disable The account

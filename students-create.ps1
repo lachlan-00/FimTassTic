@@ -62,6 +62,9 @@ $9Group = Get-ADGroupMember -Identity "S-G_Group D"
 $10Group = Get-ADGroupMember -Identity "S-G_Group C"
 $11Group = Get-ADGroupMember -Identity "S-G_Group B"
 $12Group = Get-ADGroupMember -Identity "S-G_Group A"
+$DenyAdmin = Get-ADGroupMember -Identity "S-G_Student-Deny-Admin"
+$AllowAdmin = Get-ADGroupMember -Identity "S-G_Student-Admin"
+$OwncloudGroup = Get-ADGroupMember -Identity "CN=owncloud_student,OU=owncloud,OU=Security,OU=Curriculum Groups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 # Get Date and Format Field to Match Termination Date
 $YEAR = [string](Get-Date).Year
 $MONTH = [string](Get-Date).Month
@@ -91,6 +94,9 @@ foreach($line in $input) {
     If ($UserCode.Length -ne 5) {
             $UserCode = "0${UserCode}"
     }
+
+    # Set Login Name
+    $LoginName = $UserCode
 
     # Check Termination Dates
     $Termination = $line.dol.Trim()
@@ -171,45 +177,6 @@ foreach($line in $input) {
             $Surname = ($line.surname.Trim())
         }
 
-        # Set Login and display names/text
-        $TestSurname = ((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "")
-        $TestName = $PreferredName.substring(0,2)
-        $TestGiven = $GivenName.substring(0,2)
-
-        If (((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "").length -gt 3) {
-            $TempSurname = $TestSurname.substring(0,4)
-            $LoginName = "${YearIdent}-${TempSurname}${TestName}"
-            $Test0 = "${YearIdent}-${TestSurname}${TestName}"
-        }
-        Else {
-            $LoginName = "${YearIdent}-${TestSurname}${TestName}"
-            $Test0 = "${YearIdent}-${TestSurname}${TestName}"
-        }
-
-        # Correct usercode if opened in Excel
-        $UserCode = (Get-Culture).TextInfo.ToUpper($line.stud_code.Trim())
-        If ($UserCode.Length -ne 5) {
-            $UserCode = "0${UserCode}"
-        }
-
-        # Check for given name
-        If ($LoginName -notcontains $Test0) {
-            If (Get-ADUser -Filter { ((SamAccountName -eq $Test0) -and (Description -eq $UserCode)) }) {
-                $LoginName = (Get-Culture).TextInfo.ToLower($Test0)
-            }
-            Else {
-                $LoginName = (Get-Culture).TextInfo.ToLower($LoginName)
-            }
-        }
-        Else {
-            $LoginName = (Get-Culture).TextInfo.ToLower($LoginName)
-        }
-
-        # Check for existing users before creating new ones.
-        If (!(Get-ADUser -Filter { (Description -eq $UserCode) })) {
-            $LoginName = $UserCode
-        }
-
         # Replace Common Acronyms and name spellings
         $Surname = $Surname -replace "D'a", "D'A"
         $Surname = $Surname -replace "De L", "de L"
@@ -238,6 +205,7 @@ foreach($line in $input) {
         $UserPrincipalName = "${LoginName}@villanova.vnc.qld.edu.au"
         $Position = "Year ${YearGroup}"
         $HomeDrive = "\\vncfs01\studentdata$\${YearIdent}\${LoginName}"
+        $JobTitle = "Student - ${YEAR}"
 
         ########################################
         ### Create / Modify Student Accounts ###
@@ -250,7 +218,7 @@ foreach($line in $input) {
         }
 
         # Set user to confirm details
-        $TestUser = (Get-ADUser -Filter { (Description -eq $UserCode) } -Properties *)
+        $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
 
         # Check Name Information
         If ($TestUser) {
@@ -289,20 +257,40 @@ foreach($line in $input) {
             }
 
             # Set Year Level and Title
-            If (!($TestUser.Title) -ceq ("Student - ${YEAR}")) {
-                Set-ADUser -Identity $TestUser.SamAccountName -Title "Student - ${YEAR}"
-                write-host $TestUser.Title
-                write-host "Student - ${YEAR}"
+            If (!($TestUser.Title) -eq $null) {
+                Set-ADUser -Identity $TestUser.SamAccountName -Title $JobTitle
+                write-host $LoginName, "Title change to: ${JobTitle}"
             }
-            If (!($TestUser.Office) -eq ($YearGroup)) {
+            ElseIf (!($TestUser.Title).contains($JobTitle)) {
+                Set-ADUser -Identity $TestUser.SamAccountName -Title $JobTitle
+                write-host $LoginName, "Title change to: ${JobTitle}"
+            }
+            If (!($TestUser.Office) -eq ("${YearGroup}")) {
                 Set-ADUser -Identity $TestUser.SamAccountName -Office $Position
                 write-host $LoginName, "year level change to ${Position}" 
+            }
+
+            # Set Department to identify current staff
+            If (!($TestUser.Department) -ceq ("Student ${DAY}-${MONTH}-${YEAR}")) {
+                Set-ADUser -Identity $TestUser.SamAccountName -Department "Student ${DAY}-${MONTH}-${YEAR}"
+                write-host $TestUser.Name, "Setting Position:", $TestUser.Department
+                write-host "Student ${DAY}-${MONTH}-${YEAR}"
             }
 
             # Check Group Membership
             if (!($StudentGroup.name.contains($TestUser.name))) {
                 Add-ADGroupMember -Identity "Students" -Member $LoginName
                 write-host $LoginName "added Students Group"
+            }
+            if (!($OwncloudGroup.name.contains($TestUser.name))) {
+                        Add-ADGroupMember -Identity "owncloud_student" -Member $TestUser.SamAccountName
+                        write-host $TestUser.SamAccountName "added owncloud"
+            }
+            # Check user for admin rights.
+            if ((!($DenyAdmin.name.contains($TestUser.name))) -and (($AllowAdmin.name.contains($TestUser.name)))) {
+                Add-ADGroupMember -Identity "S-G_Student-Deny-Admin" -Member $LoginName
+                Remove-ADGroupMember -Identity "S-G_Student-Admin" -Member $LoginName -Confirm:$false
+                write-host "${LoginName} added to the local deny admin group and removed from admins"
             }
             # Remove groups for other grades and add the correct grade
             IF ($YearGroup -eq "5") {
@@ -545,16 +533,19 @@ foreach($line in $input) {
     Else {
 
         # Disable users with a termination date if they are still enabled
-        If (Get-ADUser -Filter { ((Description -eq $UserCode) -and (Enabled -eq "True")) }) {
+        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
 
             # Terminate Students AFTER their Termination date
             If ($DATE -gt $Termination) {
                 write-host "DISABLING ACCOUNT ${$LoginName}"
 
                 # Set user to confirm details
-                $TestUser = Get-ADUser -Filter { (Description -eq $UserCode) }
+                $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
 
-                If (!($TestUser -eq $null)) {
+                If ($TestUser.Description -eq "keep") {
+                    write-host "${LoginName} Keeping terminated user"
+                }
+                ElseIf (!($TestUser -eq $null)) {
                     if (!($TestUser.distinguishedname.Contains($DisablePath))) {
 
                         # Move to disabled user OU if not already there
@@ -598,6 +589,10 @@ foreach($line in $input) {
                     if ($12Group.name.contains($TestUser.name)) {
                         Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 12"
+                    }
+                    if ($OwncloudGroup.name.contains($TestUser.name)) {
+                        Remove-ADGroupMember -Identity "owncloud_staff" -Member $TestUser.SamAccountName -Confirm:$false
+                        write-host $TestUser.SamAccountName "REMOVED owncloud"
                     }
 
                     # Disable The account

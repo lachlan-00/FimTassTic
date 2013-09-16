@@ -62,6 +62,8 @@ $9Group = Get-ADGroupMember -Identity "S-G_Group D"
 $10Group = Get-ADGroupMember -Identity "S-G_Group C"
 $11Group = Get-ADGroupMember -Identity "S-G_Group B"
 $12Group = Get-ADGroupMember -Identity "S-G_Group A"
+$DenyAdmin = Get-ADGroupMember -Identity "S-G_Student-Deny-Admin"
+$AllowAdmin = Get-ADGroupMember -Identity "S-G_Student-Admin"
 # Get Date and Format Field to Match Termination Date
 $YEAR = [string](Get-Date).Year
 $MONTH = [string](Get-Date).Month
@@ -84,13 +86,16 @@ write-host
 
 foreach($line in $input) {
 
-    # UserCode is the Unique Identifier for Students
+    # UserCode/Loginname is the Unique Identifier for Students
     $UserCode = (Get-Culture).TextInfo.ToUpper($line.stud_code.Trim())
 
     # Correct usercode if opened in Excel
     If ($UserCode.Length -ne 5) {
             $UserCode = "0${UserCode}"
     }
+
+    # Set Login Name
+    $LoginName = $UserCode
 
     # Check Termination Dates
     $Termination = $line.dol.Trim()
@@ -171,39 +176,6 @@ foreach($line in $input) {
             $Surname = ($line.surname.Trim())
         }
 
-        # Set Login and display names/text
-        $TestSurname = ((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "")
-        $TestName = $PreferredName.substring(0,2)
-        $TestGiven = $GivenName.substring(0,2)
-
-        If (((($Surname -replace "\s+", "") -replace "'", "") -replace "-", "").length -gt 3) {
-            $TempSurname = $TestSurname.substring(0,4)
-            $LoginName = "${YearIdent}-${TempSurname}${TestName}"
-            $Test0 = "${YearIdent}-${TestSurname}${TestName}"
-        }
-        Else {
-            $LoginName = "${YearIdent}-${TestSurname}${TestName}"
-            $Test0 = "${YearIdent}-${TestSurname}${TestName}"
-        }
-
-        # Check for given name
-        If ($LoginName -notcontains $Test0) {
-            If (Get-ADUser -Filter { ((SamAccountName -eq $Test0) -and (Description -eq $UserCode)) }) {
-                $LoginName = (Get-Culture).TextInfo.ToLower($Test0)
-            }
-            Else {
-                $LoginName = (Get-Culture).TextInfo.ToLower($LoginName)
-            }
-        }
-        Else {
-            $LoginName = (Get-Culture).TextInfo.ToLower($LoginName)
-        }
-
-        # Check for existing users before creating new ones.
-        If (!(Get-ADUser -Filter { (Description -eq $UserCode) })) {
-            $LoginName = $UserCode
-        }
-
         # Replace Common Acronyms and name spellings
         $Surname = $Surname -replace "D'a", "D'A"
         $Surname = $Surname -replace "De L", "de L"
@@ -232,19 +204,20 @@ foreach($line in $input) {
         $UserPrincipalName = "${LoginName}@villanova.vnc.qld.edu.au"
         $Position = "Year ${YearGroup}"
         $HomeDrive = "\\vncfs01\studentdata$\${YearIdent}\${LoginName}"
+        $JobTitle = "Student - ${YEAR}"
 
         ########################################
         ### Create / Modify Student Accounts ###
         ########################################
         
         # Create basic user if you can't find one
-        If (!(Get-ADUser -Filter { (Description -eq $UserCode)})) {
+        If (!(Get-ADUser -Filter { (SamAccountName -eq $LoginName)})) {
             #New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "Abc123" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
             write-host "${LoginName} created for ${FullName}"
         }
 
         # Set user to confirm details
-        $TestUser = (Get-ADUser -Filter { (Description -eq $UserCode) } -Properties *)
+        $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
 
         # Check Name Information
         If ($TestUser) {
@@ -281,15 +254,13 @@ foreach($line in $input) {
                 write-host "Taking From:" $TestUser.distinguishedname
                 write-host "Moving To:" $UserPath
             }
-
             # Set Year Level and Title
-            If (!($TestUser.Title) -ceq ("Student - ${YEAR}")) {
-                Set-ADUser -Identity $TestUser.SamAccountName -Title "Student - ${YEAR}"
-                write-host $TestUser.Title
-                write-host "Student - ${YEAR}"
+            If (!($TestUser.Title).contains($JobTitle)) {
+                #Set-ADUser -Identity $TestUser.SamAccountName -Title $JobTitle
+                write-host $LoginName, "Title change to Student - ${YEAR}"
             }
-            If (!($TestUser.Office) -eq ($YearGroup)) {
-                Set-ADUser -Identity $TestUser.SamAccountName -Office $YearGroup
+            If (!($TestUser.Office) -eq ("${YearGroup}")) {
+                #Set-ADUser -Identity $TestUser.SamAccountName -Office $YearGroup
                 write-host $TestUser.SamAccountName, "year level change to ${YearGroup}" 
             }
 
@@ -297,6 +268,11 @@ foreach($line in $input) {
             if (!($StudentGroup.name.contains($TestUser.name))) {
                 #Add-ADGroupMember -Identity Students -Member $TestUser.SamAccountName
                 write-host $TestUser.SamAccountName "added Students Group"
+            }
+            # Check user for admin rights.
+            if ((!($DenyAdmin.name.contains($TestUser.name))) -and (($AllowAdmin.name.contains($TestUser.name)))) {
+                #Add-ADGroupMember -Identity "S-G_Student-Admin" -Member $LoginName
+                write-host "${LoginName} added to the local deny admin group and removed form admins"
             }
             # Remove groups for other grades and add the correct grade
             IF ($YearGroup -eq "5") {
@@ -306,30 +282,30 @@ foreach($line in $input) {
                     write-host $TestUser.SamAccountName "added 5"
                 }
                 if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
             }
             IF ($YearGroup -eq "6") {
                 if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 # Add Correct Year Level
                 if (!($6Group.name.contains($TestUser.name))) {
@@ -337,30 +313,30 @@ foreach($line in $input) {
                     write-host $TestUser.SamAccountName "added 6"
                 }
                 if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
             }
             IF ($YearGroup -eq "7") {
                 if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 # Add Correct Year Level
                 if (!($7Group.name.contains($TestUser.name))) {
@@ -368,30 +344,30 @@ foreach($line in $input) {
                     write-host $TestUser.SamAccountName "added 7"
                 }
                 if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
             }
             IF ($YearGroup -eq "8") {
                 if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 # Add Correct Year Level
                 if (!($8Group.name.contains($TestUser.name))) {
@@ -399,30 +375,30 @@ foreach($line in $input) {
                     write-host $TestUser.SamAccountName "added 8"
                 }
                 if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
             }
             IF ($YearGroup -eq "9") {
                 if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 # Add Correct Year Level
                 if (!($9Group.name.contains($TestUser.name))) {
@@ -430,30 +406,30 @@ foreach($line in $input) {
                     write-host $TestUser.SamAccountName "added 9"
                 }
                 if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
             }
             IF ($YearGroup -eq "10") {
                 if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 # Add Correct Year Level
                 if (!($10Group.name.contains($TestUser.name))) {
@@ -461,30 +437,30 @@ foreach($line in $input) {
                     write-host $TestUser.SamAccountName "added 10"
                 }
                 if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
             }
             IF ($YearGroup -eq "11") {
                 if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 # Add Correct Year Level
                 if (!($11Group.name.contains($TestUser.name))) {
@@ -492,30 +468,30 @@ foreach($line in $input) {
                     write-host $TestUser.SamAccountName "added 11"
                 }
                 if ($12Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
             }
             IF ($YearGroup -eq "12") {
                 if ($5Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($6Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($7Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($8Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($9Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($10Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 if ($11Group.name.contains($TestUser.name)) {
-                    #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                    #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                 }
                 # Add Correct Year Level
                 if (!($12Group.name.contains($TestUser.name))) {
@@ -539,7 +515,7 @@ foreach($line in $input) {
     Else {
 
         # Disable users with a termination date if they are still enabled
-        If (Get-ADUser -Filter { ((Description -eq $UserCode) -and (Enabled -eq "True")) }) {
+        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
 
             # Terminate Students AFTER their Termination date
             If ($DATE -gt $Termination) {
@@ -550,7 +526,7 @@ foreach($line in $input) {
                 write-host
 
                 # Set user to confirm details
-                $TestUser = (Get-ADUser -Filter { (Description -eq $UserCode) } -Properties *)
+                $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
 
                 If (!($TestUser -eq $null)) {
                     if (!($TestUser.distinguishedname.Contains($DisablePath))) {
@@ -562,39 +538,39 @@ foreach($line in $input) {
 
                     # Check Group Membership
                     if ($StudentGroup.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity "Students" -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity "Students" -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED Students"
                     }
                     if ($5Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $5Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $5Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 5"
                     }
                     if ($6Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $6Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $6Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 6"
                     }
                     if ($7Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $7Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $7Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 7"
                     }
                     if ($8Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $8Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $8Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 8"
                     }
                     if ($9Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $9Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $9Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 9"
                     }
                     if ($10Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $10Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $10Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 10"
                     }
                     if ($11Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $11Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $11Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 11"
                     }
                     if ($12Group.name.contains($TestUser.name)) {
-                        #Remove-ADGroupMember -Force -Identity $12Name -Member $TestUser.SamAccountName
+                        #Remove-ADGroupMember -Identity $12Name -Member $TestUser.SamAccountName -Confirm:$false
                         write-host $TestUser.SamAccountName "REMOVED 12"
                     }
 
