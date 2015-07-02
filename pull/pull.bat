@@ -1,9 +1,10 @@
-C:\Python27\python.exe C:\DATA\pull\export-staff.py telemf
-
-C:\Python27\python.exe C:\DATA\pull\export-student.py student
-C:\Python27\python.exe C:\DATA\pull\export-student.py studsub
-
-C:\Python27\python.exe C:\DATA\pull\export-teacher.py teacher
-C:\Python27\python.exe C:\DATA\pull\export-teacher.py tchsub
-
-C:\Python27\python.exe C:\DATA\pull\export-StudentComputers.py tblAssets
+C:\Python27\python.exe C:\DATA\pull\export-lansweeper.py fim_assets
+C:\Python27\python.exe C:\DATA\pull\export.py fim_student
+C:\Python27\python.exe C:\DATA\pull\export.py fim_student_filtered
+C:\Python27\python.exe C:\DATA\pull\export.py fim_staff
+C:\Python27\python.exe C:\DATA\pull\export.py fim_classes
+C:\Python27\python.exe C:\DATA\pull\export.py _CUSTOM_STAFF_ID
+C:\Python27\python.exe C:\DATA\pull\export.py _CUSTOM_STUDENT_ID
+C:\Python27\python.exe C:\DATA\pull\export.py fim_MoodleCourses
+C:\Python27\python.exe C:\DATA\pull\export.py fim_MoodleALLUSERS
+C:\Python27\python.exe C:\DATA\pull\export.py fim_MoodleGroups

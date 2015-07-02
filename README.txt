@@ -1,7 +1,13 @@
 ------------------------------------------------------------------
 FimTassTic: Automatic User Management using CSV data from TASS.web
 ------------------------------------------------------------------
-v1.0
+
+v2015.1
+-------
+ * Removed CSV files (you can create your own with the required columns)
+ * Updated to most recent version
+ * Obfuscated passwords and names (This means you will obviously edit to fill your own values.)
+
 
 Why do this?
 ------------
@@ -17,7 +23,7 @@ I have included the python scripts i use to pull our data from the employee/stud
 
 Requires
 --------
- * pyodbc
+ * pyodbc (If you use the pull scripts)
 
 
 Links

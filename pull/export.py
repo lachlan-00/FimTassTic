@@ -1,13 +1,13 @@
 import pyodbc, csv
 
-connect_string = 'DRIVER={SQL Server};SERVER=SQLSERNAME\TASSWEB;DATABASE=tass;UID=USERNAME;PWD=PASSWORD'
+connect_string = 'DRIVER={SQL Server};SERVER=%CHANGE%;DATABASE=%CHANGE%;UID=%CHANGE%;PWD=%CHANGE%'
 
 def get_data(tblName, cnxn):
     cursor = cnxn.cursor()
     try:
         cursor.execute('SELECT * FROM %s WHERE cmpy_code = 01' %(tblName))
     except:
-        cursor.execute('SELECT * FROM %s WHERE cust_code = 01' %(tblName))
+        cursor.execute('SELECT * FROM %s' %(tblName))
     return [row for row in cursor]
 
 def get_columns(tblName, cnxn):
