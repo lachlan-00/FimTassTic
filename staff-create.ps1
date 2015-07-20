@@ -23,7 +23,7 @@
 ###############################################################################
 
 import-module activedirectory
-$input = Import-CSV  ".\csv\fim_staff.csv" -Encoding UTF8
+$input = Import-CSV  ".\csv\fim_staffALL.csv" -Encoding UTF8
 $classinput = Import-CSV  ".\csv\fim_classes.csv" -Encoding UTF8
 $idinput = Import-CSV  ".\csv\_CUSTOM_STAFF_ID.csv" -Encoding UTF8
 
@@ -36,41 +36,45 @@ write-host
 ###############
 
 # OU paths for differnt user types
-$UserPath = "OU=example,DC=qld,DC=edu,DC=au"
-$ITPath = "OU=example,DC=qld,DC=edu,DC=au"
-$TeacherPath = "OU=example,DC=qld,DC=edu,DC=au"
-$NonTeacherPath = "OU=example,DC=qld,DC=edu,DC=au"
-$ReliefTeacherPath = "OU=example,DC=qld,DC=edu,DC=au"
-$TutorPath = "OU=example,DC=qld,DC=edu,DC=au"
-$DisablePath = "OU=example,DC=qld,DC=edu,DC=au"
+$UserPath = "OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
+$ITPath = "OU=it,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
+$TeacherPath = "OU=teaching,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
+$NonTeacherPath = "OU=nonteaching,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
+$ReliefTeacherPath = "OU=relief,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
+$OtherPath = "OU=other,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
+$TutorPath = "OU=tutors,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
+$DisablePath = "OU=staff,OU=users,OU=disabled,DC=example,DC=com,DC=au"
 # Get membership for group Membership Tests
-$TestStaff = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$TestAllStaff = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$TestTeachers = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$TestMoodleTeachers = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-#$OwncloudGroup = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
+$TestStaff = Get-ADGroupMember -Identity "CN=Staff,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$TestCanonStaff = Get-ADGroupMember -Identity "CN=Printer-Canon-Staff,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+#$TestAllStaff = Get-ADGroupMember -Identity "CN=allstaff,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$TestTeachers = Get-ADGroupMember -Identity "CN=S-G_Teachers,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$TestMoodleTeachers = Get-ADGroupMember -Identity "CN=MoodleTeacher,OU=RoleAssignment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
+$TestMapTeachers = Get-ADGroupMember -Identity "CN=Map-Teachers,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+#$OwncloudGroup = Get-ADGroupMember -Identity "CN=owncloud_staff,OU=owncloud,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
 #Year Levels From teaching class lists
-$teaches5 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$teaches6 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$teaches7 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$teaches8 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$teaches9 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$teaches10 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$teaches11 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$teaches12 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
+$teaches5 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year5,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$teaches6 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year6,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$teaches7 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year7,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$teaches8 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year8,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$teaches9 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year9,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$teaches10 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year10,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$teaches11 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year11,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$teaches12 = Get-ADGroupMember -Identity "CN=S-G_Teacher-Year12,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
 #Year level teaching mail groups
-$mail5 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$mail6 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$mail7 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$mail8 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$mail9 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$mail10 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$mail11 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$mail12 = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
+$mail5 = Get-ADGroupMember -Identity "CN=Teachers - Year 5,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$mail6 = Get-ADGroupMember -Identity "CN=Teachers - Year 6,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$mail7 = Get-ADGroupMember -Identity "CN=Teachers - Year 7,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$mail8 = Get-ADGroupMember -Identity "CN=Teachers - Year 8,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$mail9 = Get-ADGroupMember -Identity "CN=Teachers - Year 9,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$mail10 = Get-ADGroupMember -Identity "CN=Teachers - Year 10,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$mail11 = Get-ADGroupMember -Identity "CN=Teachers - Year 11,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$mail12 = Get-ADGroupMember -Identity "CN=Teachers - Year 12,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
 # Teacher Pastoral groups
-$JuniorPastoral = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$MiddlePastoral = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
-$SeniorPastoral = Get-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au"
+$JuniorPastoral = Get-ADGroupMember -Identity "CN=Teachers - Junior Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$MiddlePastoral = Get-ADGroupMember -Identity "CN=Teachers - Middle Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+$SeniorPastoral = Get-ADGroupMember -Identity "CN=Teachers - Senior Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au"
+
 # Get Date and Format Field to Match Termination Date
 $YEAR = [string](Get-Date).Year
 $MONTH = [string](Get-Date).Month
@@ -192,6 +196,7 @@ foreach($line in $input) {
         $Surname = $Surname -replace "Mcn", "McN"
         $Surname = $Surname -replace "Mcp", "McP"
         $Surname = $Surname -replace "Mcw", "McW"
+        $Surname = $Surname -replace "O'b", "O'B"
         $Surname = $Surname -replace "O'c", "O'C"
         $Surname = $Surname -replace "O'd", "O'D"
         $Surname = $Surname -replace "O'k", "O'K"
@@ -203,10 +208,9 @@ foreach($line in $input) {
         $DisplayName = $DisplayName -replace "Peter Wieneke", "Fr. Peter Wieneke OSA"
         $DisplayName = $DisplayName -replace "Peter Morris", "Dr. Peter Morris"
         $DisplayName = $DisplayName -replace "Irene Lategan", "Dr. Irene Lategan"
-
         # Set remaining details
-        $UserPrincipalName = "${LoginName}@villanova.vnc.qld.edu.au"
-        $HomeDrive = "\\fileserver\home\Staff\${LoginName}"
+        $UserPrincipalName = "${LoginName}@example.com.au"
+        $HomeDrive = "\\example.com.au\home\Staff\${LoginName}"
         $Telephone = $line.phone_w_text.Trim()
         If ($Telephone.length -le 1) {
             $Telephone = $null
@@ -219,7 +223,7 @@ foreach($line in $input) {
 
         # create basic user if you can't find one
         If (!(Get-ADUser -Filter { SamAccountName -eq $LoginName })) {
-            New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "mypasswordhere" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
+            New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "mypassword" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
             Set-ADUser -Identity $LoginName -Description $Position -Office $Position -Title $Position
             write-host "${LoginName} created for ${FullName}"
         }
@@ -294,7 +298,7 @@ foreach($line in $input) {
                 write-host
                 Set-ADUser -Identity $TestAccountName -Description $Position
             }
-            
+
             # Add Office title
             if (!("Villanova College" -ceq $TestOffice)) {
                 write-host $TestAccountName, "setting Office"
@@ -344,19 +348,38 @@ foreach($line in $input) {
 
             # Move user to their default OU if not already there
             if ($TestUser.description -eq $null) {
-                write-host "no description for ${LoginName}"
+                if (!($TestUser.distinguishedname.Contains($OtherPath))) {
+                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $OtherPath
+                    write-host "Moving to staff\other OU: no description for ${LoginName}"
+                write-host
+                }
             }
             Elseif ($TestUser.distinguishedname.Contains($DisablePath)) {
                 Get-ADUser $TestAccountName | Move-ADObject -TargetPath $UserPath
                 write-host $TestAccountName "moved out of Disabled OU"
+                write-host
             }
-            ElseIf (($TestUser.Description.Contains("Relief Teacher")) -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
+            ElseIf (($TestCompany  -ceq "Relief Teacher") -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
                 Get-ADUser $TestAccountName | Move-ADObject -TargetPath $ReliefTeacherPath
                 write-host $TestAccountName "moved to Relief Teacher OU"
+                write-host
             }
-            ElseIf (($TestUser.Description.Contains("Tutor")) -and (!($TestUser.distinguishedname.Contains($TutorPath)))) {
+            ElseIf ($TestCompany -ceq "Teacher") {
+                If ($TestUser.distinguishedname.Contains($ReliefTeacherPath)) {
+                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $TeacherPath
+                    write-host $TestAccountName "moved to  Teacher OU from Relief Teachers"
+                    write-host
+                }
+                ElseIf (!($TestUser.distinguishedname.Contains($TeacherPath))) {
+                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $TeacherPath
+                    write-host $TestAccountName "moved to  Teacher OU"
+                    write-host
+                }
+            }
+            ElseIf (($TestCompany -ceq "Tutors") -and (!($TestUser.distinguishedname.Contains($TutorPath)))) {
                 Get-ADUser $TestAccountName | Move-ADObject -TargetPath $TutorPath
                 write-host $TestAccountName "moved to Music Tutor OU"
+                write-host
             }
             ElseIf (($TestPath -and (!($TestTeacherPath))) -and (!($TestNonTeacherPath)) -and (!($TestITPath)) -and (!($TestTutorPath)) -and (!($TestReliefTeacherPath))) {
                 Get-ADUser $TestAccountName | Move-ADObject -TargetPath $NonTeacherPath
@@ -366,7 +389,7 @@ foreach($line in $input) {
             }
 
             # Set company for automatic mail group filtering
-            if ($TestUser.distinguishedname.Contains($NonTeacherPath)) {
+            if (($TestUser.distinguishedname.Contains($NonTeacherPath)) -and (!($TeacherCode))) {
                 if ((!($TestCompany -ceq "Admin")) -or ($TestCompany -eq $null)) {
                     Set-ADUser -Identity $TestAccountName -Company "Admin"
                     write-host $TestUser.Name "set company to Admin"
@@ -402,14 +425,11 @@ foreach($line in $input) {
                         Add-ADGroupMember -Identity "Staff" -Member $TestAccountName
                         write-host $TestAccountName "added Staff"
             }
-            if (!($TestAllStaff.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "All Staff" -Member $TestAccountName
-                        write-host $TestAccountName "added allstaff"
+            if (!($TestCanonStaff.name.contains($TestUser.name))) {
+                        Add-ADGroupMember -Identity "CN=Printer-Canon-Staff,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                        write-host $TestAccountName "added Printer-Canon-Staff"
             }
-            #if (!($OwncloudGroup.name.contains($TestUser.name))) {
-            #            Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
-            #            write-host $TestAccountName "added owncloud"
-            #}
+
             foreach($line in $idinput) {
                 $tmpName = (Get-Culture).TextInfo.ToLower($line.emp_code.Trim())
                 $tmpID = (Get-Culture).TextInfo.ToUpper($line.idcard_nfc.Trim())
@@ -442,6 +462,17 @@ foreach($line in $input) {
             $TestAccountName = $TestUser.SamAccountName
             $Description = $TestUser.Description
 
+            #Make sure Teachers have the correct Company
+            if ((!($TestCompany -ceq "Teacher")) -and (!($Description.Contains("Relief Teacher")))) {
+                Set-ADUser -Identity $TestAccountName -Company "Teacher"
+                write-host "Changing Company for ${TestAccountName} to Teacher"
+                write-host
+                #refresh details again
+                $TestUser = (Get-ADUser  -Filter { (SamAccountName -eq $LoginName) }  -Properties *)
+                $TestAccountName = $TestUser.SamAccountName
+                $Description = $TestUser.Description
+            }
+
             If ($TestUser.Enabled) {
 
                 # Move to Teacher OU if not already there
@@ -461,12 +492,16 @@ foreach($line in $input) {
                 }
                 # Check Group Membership
                 if (!($TestTeachers.name.contains($TestUser.name))) {
-                    Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Add-ADGroupMember -Identity "CN=S-G_Teachers,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     write-host $TestAccountName "ADDED to Teachers Group"
                 }
                 if (!($TestMoodleTeachers.name.contains($TestUser.name))) {
-                    Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Add-ADGroupMember -Identity "CN=MoodleTeacher,OU=RoleAssignment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     write-host $TestAccountName "ADDED to MoodleTeachers Group"
+                }
+                if (!($TestMapTeachers.name.contains($TestUser.name))) {
+                    Add-ADGroupMember -Identity "CN=Map-Teachers,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    write-host $TestAccountName "ADDED to Map-Teachers Group"
                 }
 
                 # Chear year level teacher groups
@@ -601,189 +636,198 @@ foreach($line in $input) {
                         }
                     }
                 }
+
+                #Part Time STAFF ??? HACK
+                If ($TestAccountName -eq 'liddym') {
+                    $classin5 = $true
+                }
+
                 # add teachers to year level teaching groups from classes
+                # remove teachers from year level teaching groups if there are no classes found
                 If ($classin5) {
-                    if (!($teaches5.name.contains($TestUser.name))) {
-                        write-host "Found Year 5 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 5 Class"
+                    Try{
+                        #write-host "Adding Year 5 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year5,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail5.name.contains($TestUser.name))) {
-                        write-host "Found Year 5 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 5 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 5,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year5,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 5,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classin6) {
-                    if (!($teaches6.name.contains($TestUser.name))) {
-                        write-host "Found Year 6 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 6 Class"
+                    Try{
+                        #write-host "Adding Year 6 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year6,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail6.name.contains($TestUser.name))) {
-                        write-host "Found Year 6 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 6 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 6,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year6,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 6,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classin7) {
-                    if (!($teaches7.name.contains($TestUser.name))) {
-                        write-host "Found Year 7 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 7 Class"
+                    Try{
+                        #write-host "Adding Year 7 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year7,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail7.name.contains($TestUser.name))) {
-                        write-host "Found Year 7 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 7 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 7,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year7,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 7,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classin8) {
-                    if (!($teaches8.name.contains($TestUser.name))) {
-                        write-host "Found Year 8 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 8 Class"
+                    Try{
+                        #write-host "Adding Year 8 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year8,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail8.name.contains($TestUser.name))) {
-                        write-host "Found Year 8 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 8 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 8,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year8,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 8,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classin9) {
-                    if (!($teaches9.name.contains($TestUser.name))) {
-                        write-host "Found Year 9 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 9 Class"
+                    Try{
+                        #write-host "Adding Year 9 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year9,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail9.name.contains($TestUser.name))) {
-                        write-host "Found Year 9 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 9 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 9,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year9,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 9,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classin10) {
-                    if (!($teaches10.name.contains($TestUser.name))) {
-                        write-host "Found Year 10 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 10 Class"
+                    Try{
+                        #write-host "Adding Year 10 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year10,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail10.name.contains($TestUser.name))) {
-                        write-host "Found Year 10 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 10 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 10,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year10,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 10,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classin11) {
-                    if (!($teaches11.name.contains($TestUser.name))) {
-                        write-host "Found Year 11 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 11 Class"
+                    Try{
+                        #write-host "Adding Year 11 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year11,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail11.name.contains($TestUser.name))) {
-                        write-host "Found Year 11 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 11 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 11,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year11,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 11,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classin12) {
-                    if (!($teaches12.name.contains($TestUser.name))) {
-                        write-host "Found Year 12 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    #write-host "Found Year 12 Class"
+                    Try{
+                        #write-host "Adding Year 12 Security Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=S-G_Teacher-Year12,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
-                    if (!($mail12.name.contains($TestUser.name))) {
-                        write-host "Found Year 12 Class"
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Catch {
                     }
+                    Try{
+                        #write-host "Adding Year 12 Mail Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Year 12,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=S-G_Teacher-Year12,OU=security,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
+                    Remove-ADGroupMember -Identity "CN=Teachers - Year 12,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classjuniorpastoral) {
-                    if (!($JuniorPastoral.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Try{
+                        #write-host "Adding Junior Pastoral Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Junior Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=Teachers - Junior Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classmiddlepastoral) {
-                    if (!($MiddlePastoral.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Try{
+                        #write-host "Adding Middle Pastoral Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Middle Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
                     }
+                    Catch {
+                    }
+                }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=Teachers - Middle Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
                 If ($classseniorpastoral) {
-                    if (!($SeniorPastoral.name.contains($TestUser.name))) {
-                        Add-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName
+                    Try{
+                        #write-host "Adding Senior Pastoral Group for: ${TestAccountName}"
+                        Add-ADGroupMember -Identity "CN=Teachers - Senior Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName
+                    }
+                    Catch {
                     }
                 }
-                # remove teachers from year level teaching groups if there are no classes found
-                If (!($classin5)) {
-                    #write-host "REMOVED Year 5 Class"
-                    if ($teaches5.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail5.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classin6)) {
-                    #write-host "REMOVED Year 6 Class"
-                    if ($teaches6.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail6.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classin7)) {
-                    #write-host "REMOVED Year 7 Class"
-                    if ($teaches7.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail7.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classin8)) {
-                    #write-host "REMOVED Year 8 Class"
-                    if ($teaches8.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail8.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classin9)) {
-                    #write-host "REMOVED Year 9 Class"
-                    if ($teaches9.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail9.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classin10)) {
-                    #write-host "REMOVED Year 10 Class"
-                    if ($teaches10.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail10.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classin11)) {
-                    #write-host "REMOVED Year 11 Class"
-                    if ($teaches11.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail11.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classin12)) {
-                    #write-host "REMOVED Year 12 Class"
-                    if ($teaches12.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                    if ($mail12.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classjuniorpastoral)) {
-                    if ($JuniorPastoral.name.contains($TestUser.name)) {
-                       Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classmiddlepastoral)) {
-                    if ($MiddlePastoral.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
-                }
-                If (!($classseniorpastoral)) {
-                    if ($SeniorPastoral.name.contains($TestUser.name)) {
-                        Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    }
+                Else {
+                    Remove-ADGroupMember -Identity "CN=Teachers - Senior Pastoral,OU=distribution,OU=UserGroups,DC=example,DC=com,DC=au" -Member $TestAccountName -Confirm:$false
                 }
             }
         }
@@ -792,7 +836,7 @@ foreach($line in $input) {
     ###################################
     ### Disable Staff who have left ###
     ###################################
-    
+
     Else {
 
         # Disable users with a termination date if they are still enabled
@@ -801,9 +845,10 @@ foreach($line in $input) {
             # Set user to confirm details
             $TestUser =  (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
             $TestAccountName = $TestUser.SamAccountName
-            
+            # Don't disable users we want to keep
             If ($TestUser.Description -eq "keep") {
                 write-host "${LoginName} Keeping terminated user"
+                write-host
             }
             # Terminate Staff AFTER their Termination date
             ElseIf ($DATE -gt $Termination) {
@@ -815,8 +860,10 @@ foreach($line in $input) {
                 if (!($TestUser.distinguishedname.Contains($DisablePath))) {
                     # Move to disabled user OU if not already there
                     Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
+                    write-host "Moving: ${TestAccountName} to Disabled Staff OU"
+                    write-host
                 }
-            
+
                 # Disable The account
                 Set-ADUser -Identity $TestAccountName -Enabled $false
             }
@@ -828,109 +875,34 @@ foreach($line in $input) {
             }
         }
 
-        # Remove Disabled Staff from Groups
+        # Enforce Group and OU changes for disabled staff
         If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "False")) }) {
 
             # Set user to confirm details
             $TestUser =  (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
             $TestAccountName = $TestUser.SamAccountName
+            $TestMembership = $TestUser.MemberOf
 
             If ($TestUser) {
-                #remove Staff Groups
-                if (($TestStaff.name.contains($TestUser.name))) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed Staff"
+                #move them to the Disabled OU
+                if (!($TestUser.distinguishedname.Contains($DisablePath))) {
+                    # Move to disabled user OU if not already there
+                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
+                    write-host "Moving: ${TestAccountName} to Disabled Staff OU"
+                    write-host
                 }
-                if (($TestAllStaff.name.contains($TestUser.name))) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed allstaff"
-                }
-                if (($TestTeachers.name.contains($TestUser.name))) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed sg Teachers"
-                }
-                if (($TestMoodleTeachers.name.contains($TestUser.name))) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed Moodle Teachers"
-                }
-                #Year Levels From teaching class lists
-                if ($teaches5.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed  sg teacher 5"
-                }
-                if ($teaches6.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed  sg teacher 6"
-                }
-                if ($teaches7.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed  sg teacher 7"
-                }
-                if ($teaches8.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed  sg teacher 8"
-                }
-                if ($teaches9.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed  sg teacher 9"
-                }
-                if ($teaches10.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed  sg teacher 10"
-                }
-                if ($teaches11.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed  sg teacher 11"
-                }
-                if ($teaches12.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed sg teacher 12"
-                }
-                #Year level teaching mail groups
-                if ($mail5.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 5"
-                }
-                if ($mail6.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 6"
-                }
-                if ($mail7.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 7"
-                }
-                if ($mail8.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 8"
-                }
-                if ($mail9.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 9"
-                }
-                if ($mail10.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 10"
-                }
-                if ($mail11.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 11"
-                }
-                if ($mail12.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed mail teacher 12"
-                }
-                # Teacher Pastoral groups
-                if ($JuniorPastoral.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed junior pastoral"
-                }
-                if ($MiddlePastoral.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed middle pastoral"
-                }
-                if ($SeniorPastoral.name.contains($TestUser.name)) {
-                    Remove-ADGroupMember -Identity "OU=example,DC=qld,DC=edu,DC=au" -Member $TestAccountName -Confirm:$false
-                    write-host $TestAccountName "removed senior pastoral"
+
+                # Remove groups if they are a member of any additional groups
+                If ($TestMembership) {
+                    write-host "removing groups for  ${TestAccountName}"
+                    write-host
+                    #remove All Villanova  Groups
+                    Foreach($GroupName In $VillanovaGroups) {
+                        Try {
+                            Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
+                        }
+                        Catch {}
+                    }
                 }
             }
         }

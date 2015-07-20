@@ -25,6 +25,7 @@
 import-module activedirectory
 $input = Import-CSV  ".\csv\fim_MoodleCourses.csv" -Encoding UTF8
 $members = Import-CSV  ".\csv\fim_MoodleALLUSERS.csv" -Encoding UTF8
+$CUSTOMmembers = Import-CSV  ".\csv\MoodleUSERS_CUSTOM.csv" -Encoding UTF8
 
 write-host
 write-host "### Starting Moodle Membership Creation Script"
@@ -34,8 +35,8 @@ write-host
 ### GLOBALS ###
 ###############
 
-# OU path for moodle classes
-$ClassPath = "OU=example,DC=qld,DC=edu,DC=au"
+# OU paths for differnt user types
+$ClassPath = "OU=ClassEnrolment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
 
 #######################################################
 ### Empty Groups so only current members will exist ###
@@ -50,63 +51,67 @@ foreach($line in $input) {
     $fullname = $line.fullname
     $category = $line.category_idnumber
     if (!($category -ceq 'TS')) {
-        Try 
-        { 
+        Try
+        {
             #Check group membership
             Get-ADGroupMember -Identity "${coursestudent}" | %{Remove-ADGroupMember -Identity "${coursestudent}" -Members $_ -Confirm:$false}
-        } 
-        Catch 
-        { 
+        }
+        Catch
+        {
         }
     }
     if (!($category -ceq 'TS')) {
-        Try 
-        { 
+        Try
+        {
             #Check group membership
             Get-ADGroupMember -Identity "${courseteacher}" | %{Remove-ADGroupMember -Identity "${courseteacher}" -Members $_ -Confirm:$false}
-        } 
-        Catch 
+        }
+        Catch
         {
         }
     }
     # Remove membership from manual courses for junior school
-    Try 
-    { 
+    Try
+    {
         #Check group membership
         Get-ADGroupMember -Identity "05-Year-5-students" | %{Remove-ADGroupMember -Identity "05-Year-5-students" -Members $_ -Confirm:$false}
-    } 
-    Catch 
+    }
+    Catch
     {
     }
-    Try 
-    { 
+    Try
+    {
         #Check group membership
         Get-ADGroupMember -Identity "05-Year-5-teachers" | %{Remove-ADGroupMember -Identity "05-Year-5-teachers" -Members $_ -Confirm:$false}
-    } 
-    Catch 
+    }
+    Catch
     {
     }
-    
+
     # Remove membership from manual courses for junior school
-    Try 
-    { 
+    Try
+    {
         #Check group membership
         Get-ADGroupMember -Identity "06-Year-6-students" | %{Remove-ADGroupMember -Identity "06-Year-6-students" -Members $_ -Confirm:$false}
-    } 
-    Catch 
+    }
+    Catch
     {
     }
-    Try 
-    { 
+    Try
+    {
         #Check group membership
         Get-ADGroupMember -Identity "06-Year-6-teachers" | %{Remove-ADGroupMember -Identity "06-Year-6-teachers" -Members $_ -Confirm:$false}
-    } 
-    Catch 
+    }
+    Catch
     {
     }
 }
 
 Write-Host "All Class Groups emptied"
+Write-Host
+
+Write-Host "Adding membership from TASS"
+Write-Host
 
 #################################################
 ### Sort membership by 'Manager' or 'student' ###
@@ -125,63 +130,56 @@ foreach($line in $members) {
     if ($title -ceq "Manager") {
         $courseid = "${courseid}-teachers"
     }
-    if ($title -ceq "student") {
+    elseif ($title -ceq "student") {
         $courseid = "${courseid}-students"
     }
-    Try 
-    { 
-      #Add to course group membership
-      Add-ADGroupMember -Identity "${courseid}" -Member $usercode
-      Write-Host "Group ${courseid} added: ${usercode}"
-    } 
-    Catch 
-    { 
-      #Error with course
-      Write-Host "Group ${courseid} couldn't be found"
-    }
 
-    ### Manual Courses for year 5 and year 6 ###
+    ### Add User to their groups ###
 
-    # Identify year 5 and 6 students
-    if ($courseid -like "05-*") {
-        if ($title -ceq "Manager") {
-            $tempcourseid = "05-Year-5-teachers"
-        }
-        if ($title -ceq "student") {
-            $tempcourseid = "05-Year-5-students"
-        }
-        Try 
-        { 
-            #Add to course group membership
-            Add-ADGroupMember -Identity "${tempcourseid}" -Member $usercode
-            Write-Host "Group ${tempcourseid} added: ${usercode}"
-        } 
-        Catch 
-        { 
-            #Error with course
-            Write-Host "Group ${tempcourseid} couldn't be found"
-        }
+    # course names are set in SQL so it's just a simple add
+    Try {
+        #Add user to course group
+        Add-ADGroupMember -Identity "${courseid}" -Member $usercode
     }
-    if ($courseid -like "06-*") {
-        if ($title -ceq "Manager") {
-            $tempcourseid = "06-Year-6-teachers"
-        }
-        if ($title -ceq "student") {
-            $tempcourseid = "06-Year-6-students"
-        }
-        Try 
-        { 
-            #Add to course group membership
-            Add-ADGroupMember -Identity "${tempcourseid}" -Member $usercode
-            Write-Host "Group ${tempcourseid} added: ${usercode}"
-        } 
-        Catch 
-        { 
-            #Error with course
-            Write-Host "Group ${tempcourseid} couldn't be found"
-        }
+    Catch {
+        #Error with course
     }
+    Finally {
+        #end of line note
+        Write-Host "Added ${usercode} to: ${courseid}"
+    }
+}
 
+Write-Host
+Write-Host "TASS search finished"
+Write-Host
+
+Write-Host "Getting accounts from Custom File"
+Write-Host
+
+##############################################
+### Add users to cources manually from csv ###
+##############################################
+
+foreach($line in $CUSTOMmembers) {
+
+    #Using this method the $courseid must include "-students" or "-teachers"
+    $courseid = $line.CLASS_id
+    $usercode = (Get-Culture).TextInfo.ToUpper($line.USER_code)
+
+    ### Read data for Custom Course membership ###
+
+    Try {
+        #Add user to course group
+        Add-ADGroupMember -Identity "${courseid}" -Member $usercode
+    }
+    Catch {
+        #Error with course
+    }
+    Finally {
+        #end of line note
+        Write-Host "Custom Add ${usercode} to: ${courseid}"
+    }
 }
 
 write-host

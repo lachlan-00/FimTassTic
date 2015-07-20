@@ -35,29 +35,29 @@ write-host
 ###############
 
 # OU paths for differnt user types
-$DisablePath = "OU=example,DC=qld,DC=edu,DC=au"
-$5Path = "OU=example,DC=qld,DC=edu,DC=au"
-$6Path = "OU=example,DC=qld,DC=edu,DC=au"
-$7Path = "OU=example,DC=qld,DC=edu,DC=au"
-$8Path = "OU=example,DC=qld,DC=edu,DC=au"
-$9Path = "OU=example,DC=qld,DC=edu,DC=au"
-$10Path = "OU=example,DC=qld,DC=edu,DC=au"
-$11Path = "OU=example,DC=qld,DC=edu,DC=au"
-$12Path = "OU=example,DC=qld,DC=edu,DC=au"
+$DisablePath = "OU=student,OU=users,OU=disabled,DC=example,DC=com,DC=au"
+$5Path = "OU=year5,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$6Path = "OU=year6,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$7Path = "OU=year7,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$8Path = "OU=year8,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$9Path = "OU=year9,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$10Path = "OU=year10,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$11Path = "OU=year11,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$12Path = "OU=year12,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
 # Security Group names for students
-$StudentName = "OU=example,DC=qld,DC=edu,DC=au"
-$5Name = "OU=example,DC=qld,DC=edu,DC=au"
-$6Name = "OU=example,DC=qld,DC=edu,DC=au"
-$7Name = "OU=example,DC=qld,DC=edu,DC=au"
-$8Name = "OU=example,DC=qld,DC=edu,DC=au"
-$9Name = "OU=example,DC=qld,DC=edu,DC=au"
-$10Name = "OU=example,DC=qld,DC=edu,DC=au"
-$11Name = "OU=example,DC=qld,DC=edu,DC=au"
-$12Name = "OU=example,DC=qld,DC=edu,DC=au"
-$UserAdmin = "OU=example,DC=qld,DC=edu,DC=au"
-$UserPower = "OU=example,DC=qld,DC=edu,DC=au"
-$UserRegular = "OU=example,DC=qld,DC=edu,DC=au"
-$MoodleStudent = "OU=example,DC=qld,DC=edu,DC=au"
+$StudentName = "CN=Students,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$5Name = "CN=S-G_year5,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$6Name = "CN=S-G_year6,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$7Name = "CN=S-G_year7,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$8Name = "CN=S-G_year8,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$9Name = "CN=S-G_year9,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$10Name = "CN=S-G_year10,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$11Name = "CN=S-G_year11,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$12Name = "CN=S-G_year12,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$UserAdmin = "CN=Local-Users-Administrators,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$UserPower = "CN=Local-Users-Power_Users,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$UserRegular = "CN=Local-Users-Users,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
+$MoodleStudent = "CN=MoodleStudent,OU=RoleAssignment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
 # Get membership for group Membership Tests
 $StudentGroup = Get-ADGroupMember -Identity $StudentName
 $5Group = Get-ADGroupMember -Identity $5Name
@@ -196,6 +196,7 @@ foreach($line in $input) {
         $Surname = $Surname -replace "Mcn", "McN"
         $Surname = $Surname -replace "Mcp", "McP"
         $Surname = $Surname -replace "Mcw", "McW"
+        $Surname = $Surname -replace "O'b", "O'B"
         $Surname = $Surname -replace "O'c", "O'C"
         $Surname = $Surname -replace "O'd", "O'D"
         $Surname = $Surname -replace "O'k", "O'K"
@@ -204,11 +205,11 @@ foreach($line in $input) {
 
         # Set remaining details
         $FullName =  "${PreferredName} ${Surname}"
-        $UserPrincipalName = "${LoginName}@example.qld.edu.au"
+        $UserPrincipalName = "${LoginName}@example.com.au"
         $Position = "Year ${YearGroup}"
         # Home Folders are only for younger grades
         IF (($YearGroup -eq "5")-or ($YearGroup -eq "6")) {
-            $HomeDrive = "\\fileserver\home\Student\${LoginName}"
+            $HomeDrive = "\\example.com.au\home\Student\${LoginName}"
         }
         Else {
             $HomeDrive = $null
@@ -218,7 +219,7 @@ foreach($line in $input) {
         ########################################
         ### Create / Modify Student Accounts ###
         ########################################
-        
+
         # Create basic user if you can't find one
         If (!(Get-ADUser -Filter { (Description -eq $UserCode) })) {
             if (!($HomeDrive -eq $null)) {
@@ -359,17 +360,17 @@ foreach($line in $input) {
                 write-host $LoginName, "Title change to: ${JobTitle}"
             }
 
-            # set Office to current year level 
+            # set Office to current year level
             If ($YearGroup.length -eq 1) {
                 If (($YearGroup) -ne ($TestOffice.Substring($TestOffice.length-1,1))) {
                     Set-ADUser -Identity $TestAccountName -Office $Position
-                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}" 
+                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
             }
             ElseIf ($YearGroup.length -eq 2) {
                 If (($YearGroup) -ne ($TestOffice.Substring($TestOffice.length-2,2))) {
                     Set-ADUser -Identity $TestAccountName -Office $Position
-                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}" 
+                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
             }
 
@@ -401,6 +402,26 @@ foreach($line in $input) {
                 Add-ADGroupMember -Identity $MoodleStudent -Member $LoginName
                 write-host $LoginName "added MoodleStudent Group"
             }
+            # remove from power user group if in Users group
+            #if ($LocalUser.name.contains($TestName)) {
+            #    write-host $TestName, "Removing power user group"
+            #    Remove-ADGroupMember -Identity $UserPower -Member $LoginName -Confirm:$false
+            #}
+            # Check user for power user rights.
+            #if (($LocalPower.name.contains($TestName) -and ($LocalUser.name.contains($TestName))) {
+            #    write-host $TestName, "Removing power user group"
+            #    Add-ADGroupMember -Identity $UserPower -Member $LoginName
+            #}
+            # remove from power user group if in Users group
+            #if ($LocalUser.name.contains($TestName)) {
+            #    write-host $TestName, "Removing power user group"
+            #    Remove-ADGroupMember -Identity $UserPower -Member $LoginName -Confirm:$false
+            #}
+            # remove from power user group if in Administrators group
+            #if ($LocalAdmin.name.contains($TestName)) {
+            #    write-host $TestName, "Removing power user group"
+            #    Remove-ADGroupMember -Identity $UserPower -Member $LoginName -Confirm:$false
+            #}
             # Remove groups for other grades and add the correct grade
             IF ($YearGroup -eq "5") {
                 # Add Correct Year Level
@@ -673,7 +694,7 @@ foreach($line in $input) {
                 }
                 ElseIf (!($TestUser -eq $null)) {
 
-                    # Get Details  
+                    # Get Details
                     $TestName = $TestUser.Name
                     $TestAccountName = $TestUser.SamAccountName
 

@@ -34,9 +34,9 @@ write-host
 ###############
 
 # OU paths for differnt user types
-$ClassPath = "OU=example,DC=qld,DC=edu,DC=au"
-$StudentPath = "OU=example,DC=qld,DC=edu,DC=au"
-$TeacherPath = "OU=example,DC=qld,DC=edu,DC=au"
+$ClassPath = "OU=ClassEnrolment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
+$StudentPath = "OU=student,OU=ClassEnrolment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
+$TeacherPath = "OU=teacher,OU=ClassEnrolment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
 
 ######################################
 ### Create / Edit / Disable groups ###
@@ -50,49 +50,48 @@ foreach($line in $input) {
     $courseteacher = "${courseid}-teachers"
     $fullname = $line.fullname
     $category = $line.category_idnumber
-    ### skip TS courses
     if (!($category -ceq 'TS')) {
-        ### Create Groups for students
-        Try 
-        { 
-            #Check if the Group already exists
-            $exists = Get-ADGroup $coursestudent
-        } 
-        Catch 
-        { 
-            #Create the group if it doesn't exist
-            $create = New-ADGroup -Name $coursestudent -GroupScope Global -Path $StudentPath -Description $courseid
-            Write-Host "Student Group ${courseid} created"
+        if ((!($courseid -like "05-*"))-or (!($courseid -like "06-*"))) {
+            #nothing
+        }
+        else {
+            ### Create Groups for students
+            Try
+            {
+                #Check if the Group already exists
+                $exists = Get-ADGroup $coursestudent
+            }
+            Catch
+            {
+                #Create the group if it doesn't exist
+                $create = New-ADGroup -Name $coursestudent -GroupScope Global -Path $StudentPath -Description $courseid
+                Write-Host "Student Group ${courseid} created"
+            }
         }
     }
     if (!($category -ceq 'TS')) {
-        ### Create Groups for staff
-        Try 
-        { 
-            #Check if the Group already exists
-            $exists = Get-ADGroup $courseteacher
-        } 
-        Catch 
-        { 
-            #Create the group if it doesn't exist
-            $create = New-ADGroup -Name $courseteacher -GroupScope Global -Path $TeacherPath -Description $courseid
-            Write-Host "TeacherGroup ${courseid} created"
+        if ((!($courseid -like "05-*"))-or (!($courseid -like "06-*"))) {
+            #nothing
+        }
+        else {
+            ### Create Groups for staff
+            Try
+            {
+                #Check if the Group already exists
+                $exists = Get-ADGroup $courseteacher
+            }
+            Catch
+            {
+                #Create the group if it doesn't exist
+                $create = New-ADGroup -Name $courseteacher -GroupScope Global -Path $TeacherPath -Description $courseid
+                Write-Host "TeacherGroup ${courseid} created"
+            }
         }
     }
-    #else {
-    #    Try 
-    #    { 
-    #        # Remove Groups in Technical Studies
-    #        Remove-ADGroup -Identity "${courseid}" -Confirm:$false
-    #        Write-Host "Technical Studies Group ${courseid} removed"
-    #    } 
-    #    Catch 
-    #    {
-    #    }
-    #}
 }
 
 write-host
 write-host "### Moodle Group Creation Script Finished"
 write-host
 
+#USER_code,CLASS_id
