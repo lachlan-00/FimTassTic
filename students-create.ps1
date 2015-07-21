@@ -34,7 +34,7 @@ write-host
 ### GLOBALS ###
 ###############
 
-# OU paths for differnt user types
+# OU paths for different user types
 $DisablePath = "OU=student,OU=users,OU=disabled,DC=example,DC=com,DC=au"
 $5Path = "OU=year5,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
 $6Path = "OU=year6,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
@@ -162,7 +162,7 @@ foreach($line in $input) {
         Else {
             $PreferredName = ($line.preferred_name.Trim())
         }
-        If ($LoginName -eq '11334') {
+        If ($LoginName -eq "11334") {
             $PreferredName = "Seán"
         }
         if ((Get-Culture).TextInfo.ToUpper($line.given_name.Trim()) -eq $line.given_name.Trim()) {
@@ -271,7 +271,7 @@ foreach($line in $input) {
 
             # Enable user if disabled
             If ((!($TestEnabled)) -and (!($TestDescription -eq "disable"))) {
-                Set-ADUser -Identity $TestAccountName -Enabled $true
+                Set-ADUser -Identity $LoginName -Enabled $true
                 write-host "Enabling", $TestAccountName
             }
 
@@ -284,86 +284,86 @@ foreach($line in $input) {
             }
 
             If ((!($TestDescription -eq $UserCode)) -and (!($TestDescription -eq "disable"))) {
-                Set-ADUser -Identity $TestAccountNamee -Description $UserCode
+                Set-ADUser -Identity $LoginName -Description $UserCode
                 write-host $FullName, "changing description from ${TestDescription} to ${UserCode}"
                 write-host
             }
 
             # Check Name Information
             If ($TestGiven -cne $PreferredName) {
-                write-host "${TestGiven} Changed Given Name to ${PreferredName}"
-                Set-ADUser -Identity $TestAccountName -GivenName $PreferredName
+                Set-ADUser -Identity $LoginName -GivenName $PreferredName
+                write-host "${TestAccountName} Changed Given Name to ${PreferredName}"
             }
             If ($TestSurname -cne $Surname) {
-                write-host "${TestSurname} Changed Surname to ${SurName}"
-                Set-ADUser -Identity $TestAccountName -Surname $Surname
+                Set-ADUser -Identity $LoginName -Surname $Surname
+                write-host "${TestAccountName} Changed Surname to ${SurName}"
             }
             If (($TestName -cne $FullName)) {
-                write-host "${TestName} Changed Object Name to: ${FullName}"
                 Rename-ADObject -Identity $TestAccountName -NewName $FullName
+                write-host "${TestAccountName} Changed Object Name to: ${FullName}"
             }
             If (($TestDisplayName -cne $FullName)) {
-                write-host "${TestDisplayName} Changed Display Name to: ${FullName}"
-                Set-ADUser -Identity $TestAccountName -DisplayName $FullName
+                Set-ADUser -Identity $LoginName -DisplayName $FullName
+                write-host "${TestAccountName} Changed Display Name to: ${FullName}"
             }
 
             # Set company for automatic mail group filtering
             if ($UserPath -eq $5Path) {
                 if (!($TestCompany -ceq "year5")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year5"
+                    Set-ADUser -Identity $LoginName -Company "year5"
                     write-host $TestName "set company to year5"
                 }
             }
             if ($UserPath -eq $6Path) {
                 if (!($TestCompany -ceq "year6")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year6"
+                    Set-ADUser -Identity $LoginName -Company "year6"
                     write-host $TestName "set company to year6"
                 }
             }
             if ($UserPath -eq $7Path) {
                 if (!($TestCompany -ceq "year7")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year7"
+                    Set-ADUser -Identity $LoginName -Company "year7"
                     write-host $TestName "set company to year7"
                 }
             }
             if ($UserPath -eq $8Path) {
                 if (!($TestCompany -ceq "year8")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year8"
+                    Set-ADUser -Identity $LoginName -Company "year8"
                     write-host $TestName "set company to year8"
                 }
             }
             if ($UserPath -eq $9Path) {
                 if (!($TestCompany -ceq "year9")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year9"
+                    Set-ADUser -Identity $LoginName -Company "year9"
                     write-host $TestName "set company to year9"
                 }
             }
             if ($UserPath -eq $10Path) {
                 if (!($TestCompany -ceq "year10")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year10"
+                    Set-ADUser -Identity $LoginName -Company "year10"
                     write-host $TestName "set company to year10"
                 }
             }
             if ($UserPath -eq $11Path) {
                 if (!($TestCompany -ceq "year11")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year11"
+                    Set-ADUser -Identity $LoginName -Company "year11"
                     write-host $TestName "set company to year11"
                 }
             }
             if ($UserPath -eq $12Path) {
                 if (!($TestCompany -ceq "year12")) {
-                    Set-ADUser -Identity $TestAccountName -Company "year12"
+                    Set-ADUser -Identity $LoginName -Company "year12"
                     write-host $TestName "set company to year12"
                 }
             }
 
             # Set Year Level and Title
             If (($TestTitle) -eq $null) {
-                Set-ADUser -Identity $TestAccountName -Title $JobTitle
+                Set-ADUser -Identity $LoginName -Title $JobTitle
                 write-host $LoginName, "Title change to: ${JobTitle}"
             }
             ElseIf (!($TestTitle).contains($JobTitle)) {
-                Set-ADUser -Identity $TestAccountName -Title $JobTitle
+                Set-ADUser -Identity $LoginName -Title $JobTitle
                 write-host $LoginName, "Title change to: ${JobTitle}"
             }
 
@@ -376,28 +376,28 @@ foreach($line in $input) {
             # set Office to current year level
             If ($YearGroup.length -eq 1) {
                 If (($YearGroup) -ne ($test1)) {
-                    Set-ADUser -Identity $TestAccountName -Office $Position
+                    Set-ADUser -Identity $LoginName -Office $Position
                     write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
             }
             ElseIf ($YearGroup.length -eq 2) {
                 If (($YearGroup) -ne ($test2)) {
-                    Set-ADUser -Identity $TestAccountName -Office $Position
+                    Set-ADUser -Identity $LoginName -Office $Position
                     write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
             }
 
             # Set Department to identify current students
             If (!(($TestDepartment) -ceq ("Student"))) {
-                Set-ADUser -Identity $TestAccountName -Department "Student"
+                Set-ADUser -Identity $LoginName -Department "Student"
                 write-host "${TestName} Setting Position from ${TestDepartment} to Student"
             }
 
             # Add Employee Number if there is one
             if (!($LoginName -ceq $TestNumber)) {
+                Set-ADUser -Identity $LoginName -EmployeeNumber $LoginName
                 write-host "Setting employee Number (${employeeNumber}) for ${TestAccountName}"
                 write-host
-                Set-ADUser -Identity $TestAccountName -EmployeeNumber $LoginName
             }
 
             # Check Group Membership
@@ -406,7 +406,7 @@ foreach($line in $input) {
                 write-host $LoginName "added Students Group"
             }
             if (!($LocalUser.name.contains($TestName))) {
-                write-host $TestName, "Removing power user group"
+                write-host $TestName, "Add to local user group for domain workstations"
                 Add-ADGroupMember -Identity $UserRegular -Member $LoginName
             }
             # $MoodleStudentMembers
@@ -414,26 +414,7 @@ foreach($line in $input) {
                 Add-ADGroupMember -Identity $MoodleStudent -Member $LoginName
                 write-host $LoginName "added MoodleStudent Group"
             }
-            # remove from power user group if in Users group
-            #if ($LocalUser.name.contains($TestName)) {
-            #    write-host $TestName, "Removing power user group"
-            #    Remove-ADGroupMember -Identity $UserPower -Member $LoginName -Confirm:$false
-            #}
-            # Check user for power user rights.
-            #if (($LocalPower.name.contains($TestName) -and ($LocalUser.name.contains($TestName))) {
-            #    write-host $TestName, "Removing power user group"
-            #    Add-ADGroupMember -Identity $UserPower -Member $LoginName
-            #}
-            # remove from power user group if in Users group
-            #if ($LocalUser.name.contains($TestName)) {
-            #    write-host $TestName, "Removing power user group"
-            #    Remove-ADGroupMember -Identity $UserPower -Member $LoginName -Confirm:$false
-            #}
-            # remove from power user group if in Administrators group
-            #if ($LocalAdmin.name.contains($TestName)) {
-            #    write-host $TestName, "Removing power user group"
-            #    Remove-ADGroupMember -Identity $UserPower -Member $LoginName -Confirm:$false
-            #}
+
             # Remove groups for other grades and add the correct grade
             IF ($YearGroup -eq "5") {
                 # Add Correct Year Level
@@ -670,14 +651,14 @@ foreach($line in $input) {
             If ($TestAccountName -eq $tmpName) {
                 If ($TestUser) {
                     If (!($TestID -ceq $tmpID)) {
-                        if (($tmpID -eq '') -or ($tmpID -eq '#null!')) {
+                        if (($tmpID -eq "") -or ($tmpID -eq "#null!")) {
                             #write-host "No ID Found for ${LoginName}"
-                            Set-ADUser -Identity $TestAccountName -EmployeeID $null
+                            Set-ADUser -Identity $LoginName -EmployeeID $null
                         }
                         else {
+                            Set-ADUser -Identity $LoginName -EmployeeID $tmpID
                             write-host "Setting ID (${tmpID}) for ${LoginName}"
                             write-host
-                            Set-ADUser -Identity $TestAccountName -EmployeeID $tmpID
                         }
                     }
                 }
@@ -710,7 +691,7 @@ foreach($line in $input) {
             ElseIf ($DATE -gt $Termination) {
                 # Disable The account when we don't want to keep it
                 If ($TestUser) {
-                    Set-ADUser -Identity $TestAccountName -Enabled $false
+                    Set-ADUser -Identity $LoginName -Enabled $false
                     write-host "DISABLING ACCOUNT ${$LoginName}"
                     write-host
                 }
