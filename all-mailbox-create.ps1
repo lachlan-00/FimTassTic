@@ -23,13 +23,29 @@
 ###############################################################################
 
 import-module activedirectory
-. 'D:\Program Files\Microsoft\Exchange Server\V15\Bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto
-$input = Import-CSV  .\csv\fim_staff.csv -Encoding UTF8
+. "D:\Program Files\Microsoft\Exchange Server\V15\Bin\RemoteExchange.ps1"; Connect-ExchangeServer -auto
+$input = Import-CSV  .\csv\fim_staffALL.csv -Encoding UTF8
 $StudentInput = Import-CSV .\csv\fim_student_filtered.csv -Encoding UTF8
-$userdomain = 'userdomain'
+$userdomain = "userdomain"
 
 write-host "### Starting Mailbox Creation Script"
 write-host
+
+# Set the date to match the termination date for each type of user
+$YEAR = [string](Get-Date).Year
+$MONTH = [string](Get-Date).Month
+If ($MONTH.length -eq 1) {
+    $MONTH = "0${MONTH}"
+}
+$DAY = [string](Get-Date).Day
+If ($DAY.length -eq 1) {
+    $DAY = "0${DAY}"
+}
+# Student date format
+$DATE = "${YEAR}/${MONTH}/${DAY}"
+# Staff date format
+$FULLDATE = $DATE, "00:00:00"
+
 write-host "### Parsing Staff File"
 write-host
 
@@ -37,79 +53,60 @@ write-host
 ### Create / Disable Staff Email Accounts ###
 #############################################
 
-foreach($line in $input)
-{
+foreach($line in $input) {
+
     # Get login name for processing
     $LoginName = (Get-Culture).TextInfo.ToLower($line.emp_code.Trim())
 
     # Check for staff who have left
     $Termination = $line.term_date.Trim()
     
-    ### Process Current Users ###
-    
-    If ($Termination.length -eq 0) {
-        If (Get-ADUser -Filter { (SamAccountName -eq $LoginName) }) {
-            # Set user to confirm details
-            #$TestUser = Get-ADUser -Identity $LoginName -property "mail"
-            $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
+    # Set user to confirm details
+    $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
+    $TestEnabled = $TestUser.Enabled
+    $TestDescription = $TestUser.Description
 
+    ### Process Current Users ###
+    If ($Termination.length -eq 0) {
+        # Create mailbox for active users
+        If ($TestUser) {
             # Enable mailbox for user If mail address is missing
             #if ((!($TestUser.mail)) -and (!($TestUser.Description -eq "Relief Teacher"))) {
             if (!($TestUser.mail)) {
                 #Enable-Mailbox -Identity $TestUser.name -Database Staff -AddressBookPolicy "Staff Address Policy"
                 Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}"  -Database All-Staff -AddressBookPolicy "Staff Address Policy"
+                Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
                 write-host $LoginName "created mailbox"
+                write-host
             }
-            # Disable accounts for relief teachers
-            #if (($TestUser.mail) -and ($TestUser.Description -eq "Relief Teacher")) {
-            #    Disable-Mailbox -Identity $TestUser.name -Confirm:$false
-            #    write-host $LoginName "Disabled mailbox"
-            #}
         }
     }
 
     ### Process Terminated Users ###
     
     Else {
-        # Set user to confirm details
-        $TestUser =  (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-        $TestAccountName = $TestUser.SamAccountName
-
-        If ($TestUser.Description -eq "keep") {
+        # keep some users
+        If ($TestDescription -eq "keep") {
             write-host "${LoginName} Keeping terminated user"
+            write-host
         }
         # Terminate Staff AFTER their Termination date
-        ElseIf ($DATE -gt $Termination) {
-            $YEAR = [string](Get-Date).Year
-            $MONTH = [string](Get-Date).Month
-            If ($MONTH.length -eq 1) {
-                $MONTH = "0${MONTH}"
-            }
-            $DAY = [string](Get-Date).Day
-            If ($DAY.length -eq 1) {
-                $DAY = "0${DAY}"
-            }
-            $DATE = "${YEAR}/${MONTH}/${DAY}"
-            $DATE = $DATE, "00:00:00"
-            If (($DATE -gt $Termination) -and (!($Termination.length -eq 0))) {
-                If (Get-ADUser -Filter { (SamAccountName -eq $LoginName) }) {
-                    # Set user to confirm details
-                    #$TestUser = Get-ADUser -Identity $LoginName -property "mail"
-                    $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-
-                    # Disable mailbox for users that have a mail address
-                    if ($TestUser.mail) {
-                        #Disable-Mailbox -Identity $TestUser.name -Confirm:$false
-                        Disable-Mailbox -Identity "${userdomain}\${LoginName}" -Confirm:$false
-                        write-host $LoginName "Disabled mailbox"
-                    }
+        ElseIf ($FULLDATE -gt $Termination) {
+            If ($TestUser) {
+                # Disable mailbox for users that have a mail address
+                if ($TestUser.mail) {
+                    #Disable-Mailbox -Identity $TestUser.name -Confirm:$false
+                    Disable-Mailbox -Identity "${userdomain}\${LoginName}" -Confirm:$false
+                    write-host $LoginName "Disabled mailbox"
                 }
             }
-            ElseIf ((!($DATE -gt $Termination)) -and (!($Termination.length -eq 0))) {
-                write-host "Not Final Leaving Date", $FullName
-                write-host $DATE
-                write-host $Termination
-            }
+        }
+        # Wait for the Termination date
+        ElseIf ((!($FULLDATE -gt $Termination)) -and (!($Termination.length -eq 0))) {
+            write-host "Not Final Leaving Date for ${LoginName}"
+            write-host $DATE
+            write-host $Termination
+            write-host
         }
     }
 }
@@ -121,21 +118,22 @@ write-host
 ### Create / Disable Student Email Accounts ###
 ###############################################
 
-foreach($line in $StudentInput)
-{
+foreach($line in $StudentInput) {
+
     # Get login name for processing
     $LoginName = (Get-Culture).TextInfo.ToLower($line.stud_code.Trim())
 
     # Check for students who have left
     $Termination = $line.dol.Trim()
 
+    # Set user to confirm details
+    $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
+    $TestEnabled = $TestUser.Enabled
+    $TestDescription = $TestUser.Description
+
     ### Process Current Users ###
-
     If ($Termination.length -eq 0) {
-        If (Get-ADUser -Filter { (SamAccountName -eq $LoginName) }) {
-            # Set user to confirm details
-            $TestUser = Get-ADUser -Identity $LoginName -property "mail"
-
+        If ($TestUser) {
             # Enable mailbox for user If mail address is missing
             if (!($TestUser.mail)) {
                 #Enable-Mailbox -Identity $TestUser.name -Database Student -AddressBookPolicy "Student Address Policy"
@@ -146,47 +144,32 @@ foreach($line in $StudentInput)
             }
         }
     }
-
     ### Process Terminated Users ###
-    $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-
-    If ($TestUser.Description -eq "keep") {
-                    write-host "${LoginName} Keeping terminated user"
-    }
     Else {
-        $YEAR = [string](Get-Date).Year
-        $MONTH = [string](Get-Date).Month
-        If ($MONTH.length -eq 1) {
-            $MONTH = "0${MONTH}"
+        # Keep some users Open
+        If ($TestDescription -eq "keep") {
+            write-host "${LoginName} Keeping terminated user"
+            write-host
         }
-        $DAY = [string](Get-Date).Day
-        If ($DAY.length -eq 1) {
-            $DAY = "0${DAY}"
-        }
-        $DATE = "${YEAR}/${MONTH}/${DAY}"
-        If (($DATE -gt $Termination) -and (!($Termination.length -eq 0))) {
-            If (Get-ADUser -Filter { (SamAccountName -eq $LoginName) }) {
-                # Set user to confirm details
-                $TestUser = Get-ADUser -Identity $LoginName -property "mail"
-
+        ElseIf ($DATE -gt $Termination) {
+            If ($TestUser) {
                 # Disable mailbox for users that have a mail address
                 if ($TestUser.mail) {
-                    write-host $DATE
-                    write-host $Termination
-                    write-host
-                    #Disable-Mailbox -Identity $TestUser.name -Confirm:$false
                     Disable-Mailbox -Identity "${userdomain}\${LoginName}" -Confirm:$false
                     write-host $LoginName "Disabled mailbox"
                 }
             }
         }
+        # Wait for the Termination date
         ElseIf ((!($DATE -gt $Termination)) -and (!($Termination.length -eq 0))) {
-            write-host "Not Final Leaving Date", $FullName
+            write-host "Not Final Leaving Date for ${LoginName}"
             write-host $DATE
             write-host $Termination
+            write-host
         }
     }
 }
 
 write-host "### Mailbox Creation Script Finished"
 write-host
+
