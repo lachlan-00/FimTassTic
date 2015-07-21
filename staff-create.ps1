@@ -45,6 +45,7 @@ $OtherPath = "OU=other,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
 $TutorPath = "OU=tutors,OU=staff,OU=UserAccounts,DC=example,DC=com,DC=au"
 $DisablePath = "OU=staff,OU=users,OU=disabled,DC=example,DC=com,DC=au"
 # Get membership for group Membership Tests
+$VillanovaGroups = Get-ADGroup -Filter * -SearchBase "OU=UserGroups,DC=example,DC=com,DC=au"
 $TestStaff = Get-ADGroupMember -Identity "CN=Staff,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
 $TestCanonStaff = Get-ADGroupMember -Identity "CN=Printer-Canon-Staff,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
 #$TestAllStaff = Get-ADGroupMember -Identity "CN=allstaff,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
@@ -504,7 +505,7 @@ foreach($line in $input) {
                     write-host $TestAccountName "ADDED to Map-Teachers Group"
                 }
 
-                # Chear year level teacher groups
+                # Year year level teacher groups
                 $classin5 = $false
                 $classin6 = $false
                 $classin7 = $false
@@ -838,55 +839,36 @@ foreach($line in $input) {
     ###################################
 
     Else {
+        # Set user to confirm details
+        $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
+        $TestDescription = $TestUser.Description
+        $TestEnabled = $TestUser.Enabled
+        $TestAccountName = $TestUser.SamAccountName
+        $TestMembership = $TestUser.MemberOf
 
         # Disable users with a termination date if they are still enabled
-        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
+        If ($TestEnabled) {
 
-            # Set user to confirm details
-            $TestUser =  (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-            $TestAccountName = $TestUser.SamAccountName
             # Don't disable users we want to keep
-            If ($TestUser.Description -eq "keep") {
+            If ($TestDescription -eq "keep") {
                 write-host "${LoginName} Keeping terminated user"
                 write-host
             }
             # Terminate Staff AFTER their Termination date
             ElseIf ($DATE -gt $Termination) {
-                write-host "DISABLING ACCOUNT", $TestAccountName
-                write-host $DATE
-                write-host $Termination
-                write-host
-
-                if (!($TestUser.distinguishedname.Contains($DisablePath))) {
-                    # Move to disabled user OU if not already there
-                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
-                    write-host "Moving: ${TestAccountName} to Disabled Staff OU"
+                # Disable The account when we don't want to keep it
+                If ($TestUser) {
+                    Set-ADUser -Identity $TestAccountName -Enabled $false
+                    write-host "DISABLING ACCOUNT ${$LoginName}"
                     write-host
                 }
-
-                # Disable The account
-                Set-ADUser -Identity $TestAccountName -Enabled $false
-            }
-            Else {
-                write-host "Not Final Leaving Date", $TestUser.name
-                write-host $DATE
-                write-host $Termination
-                write-host
             }
         }
-
-        # Enforce Group and OU changes for disabled staff
-        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "False")) }) {
-
-            # Set user to confirm details
-            $TestUser =  (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-            $TestAccountName = $TestUser.SamAccountName
-            $TestMembership = $TestUser.MemberOf
-
+        Else {
+            # Enforce Group and OU changes for disabled staff
             If ($TestUser) {
-                #move them to the Disabled OU
+                # Move to disabled user OU if not already there
                 if (!($TestUser.distinguishedname.Contains($DisablePath))) {
-                    # Move to disabled user OU if not already there
                     Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
                     write-host "Moving: ${TestAccountName} to Disabled Staff OU"
                     write-host
@@ -894,14 +876,16 @@ foreach($line in $input) {
 
                 # Remove groups if they are a member of any additional groups
                 If ($TestMembership) {
-                    write-host "removing groups for  ${TestAccountName}"
+                    write-host "Removing groups for ${TestAccountName}"
                     write-host
                     #remove All Villanova  Groups
                     Foreach($GroupName In $VillanovaGroups) {
                         Try {
                             Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
                         }
-                        Catch {}
+                        Catch {
+                            Write-Host "Error Removing ${GroupName}"
+                        }
                     }
                 }
             }

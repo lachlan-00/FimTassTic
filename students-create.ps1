@@ -59,6 +59,7 @@ $UserPower = "CN=Local-Users-Power_Users,OU=security,OU=UserGroups,DC=example,DC
 $UserRegular = "CN=Local-Users-Users,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
 $MoodleStudent = "CN=MoodleStudent,OU=RoleAssignment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
 # Get membership for group Membership Tests
+$VillanovaGroups = Get-ADGroup -Filter *  -SearchBase "OU=UserGroups,DC=example,DC=com,DC=au"
 $StudentGroup = Get-ADGroupMember -Identity $StudentName
 $5Group = Get-ADGroupMember -Identity $5Name
 $6Group = Get-ADGroupMember -Identity $6Name
@@ -221,23 +222,27 @@ foreach($line in $input) {
         ########################################
 
         # Create basic user if you can't find one
-        If (!(Get-ADUser -Filter { (Description -eq $UserCode) })) {
+        If (!(Get-ADUser -Filter { SamAccountName -eq $LoginName })) {
             if (!($HomeDrive -eq $null)) {
                 Try  {
                     New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "mypassword" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
                     write-host "${LoginName} created for ${FullName}"
+                    write-host
                 }
                 Catch {
                     write-host "${LoginName} already exists for ${FullName}"
+                    write-host
                 }
             }
             Else {
                 Try  {
                     New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "mypassword" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $True
                     write-host "${LoginName} created for ${FullName}"
+                    write-host
                 }
                 Catch {
                     write-host "${LoginName} already exists for ${FullName}"
+                    write-host
                 }
             }
         }
@@ -245,59 +250,61 @@ foreach($line in $input) {
         # Set user to confirm details
         $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
 
-        # Check Name Information
-        If (($TestUser) -and (!($TestUser.Description -eq "disable"))) {
-            If ($TestUser.GivenName -cne $PreferredName) {
-                write-host $TestUser.GivenName, "Changed Given Name to ${PreferredName}"
-                Set-ADUser -Identity $TestUser.SamAccountName -GivenName $PreferredName
-            }
-            If ($TestUser.Surname -cne $Surname) {
-                write-host $TestUser.SurName, "Changed Surname to ${SurName}"
-                Set-ADUser -Identity $TestUser.SamAccountName -Surname $Surname
-            }
-            If (($TestUser.Name -cne $FullName)) {
-                write-host $TestUser.Name, "Changed Object Name to: ${FullName}"
-                Rename-ADObject -Identity $TestUser -NewName $FullName
-            }
-            If (($TestUser.DisplayName -cne $FullName)) {
-                write-host $TestUser.DisplayName, "Changed Display Name to: ${FullName}"
-                Set-ADUser -Identity $TestUser.SamAccountName -DisplayName $FullName
-            }
-            #If ($TestUser.CN -cne $FullName) {
-            #    write-host $TestUser.CN, "Changed Common Name to: ${FullName}"
-            #    Set-ADUser -Identity $TestUser.SamAccountName -DisplayName $FullName
-            #}
-        }
+        # Get User Details
+        $TestName = $TestUser.Name
+        $TestGiven = $TestUser.GivenName
+        $TestSurname = $TestUser.SurName
+        $TestDisplayName = $TestUser.DisplayName
+        $TestDN = $TestUser.distinguishedname
+        $TestAccountName = $TestUser.SamAccountName
+        $TestEnabled = $TestUser.Enabled
+        $TestTitle = $TestUser.Title
+        $TestCompany = $TestUser.Company
+        $TestOffice = $TestUser.Office
+        $TestDescription = $TestUser.Description
+        $TestDepartment = $TestUser.Department
+        $TestNumber = $TestUser.employeeNumber
+        $TestID = $TestUser.employeeID
 
         # set additional user details if the user exists
-        If (($TestUser) -and (!($TestUser.Description -eq "disable"))) {
-            #If ($TestUser.Enabled) {
-            #write-host "setting null empid"
-            #    Set-ADUser -Identity $TestUser -EmployeeID $null
-            #}
+        If ($TestUser) {
 
-            # Get User Details
-            $TestName = $TestUser.Name
-            $TestAccountName = $TestUser.SamAccountName
-            $TestTitle = $TestUser.Title
-            $TestCompany = $TestUser.Company
-            $TestOffice = $TestUser.Office
-            $TestDepartment = $TestUser.Department
-            $TestNumber = $TestUser.employeeNumber
-            $TestID = $TestUser.employeeID
-
-            # Enable use if disabled
-            If (!($TestUser.Enabled)) {
+            # Enable user if disabled
+            If ((!($TestEnabled)) -and (!($TestDescription -eq "disable"))) {
                 Set-ADUser -Identity $TestAccountName -Enabled $true
                 write-host "Enabling", $TestAccountName
             }
 
-            # Move user to the default OU if not already there
-            if (!($TestUser.distinguishedname.Contains($UserPath))) {
+            # Move user to the default OU for their year level if not there
+            if (($TestEnabled) -and (!($TestDN.Contains($UserPath)))) {
                 Get-ADUser $TestAccountName | Move-ADObject -TargetPath $UserPath
                 write-host $TestAccountName
-                write-host "Taking From:" $TestUser.distinguishedname
+                write-host "Taking From: ${TestDN}"
                 write-host "Moving To:" $UserPath
+            }
+
+            If ((!($TestDescription -eq $UserCode)) -and (!($TestDescription -eq "disable"))) {
+                Set-ADUser -Identity $TestAccountNamee -Description $UserCode
+                write-host $FullName, "changing description from ${TestDescription} to ${UserCode}"
+                write-host
+            }
+
+            # Check Name Information
+            If ($TestGiven -cne $PreferredName) {
+                write-host "${TestGiven} Changed Given Name to ${PreferredName}"
+                Set-ADUser -Identity $TestAccountName -GivenName $PreferredName
+            }
+            If ($TestSurname -cne $Surname) {
+                write-host "${TestSurname} Changed Surname to ${SurName}"
+                Set-ADUser -Identity $TestAccountName -Surname $Surname
+            }
+            If (($TestName -cne $FullName)) {
+                write-host "${TestName} Changed Object Name to: ${FullName}"
+                Rename-ADObject -Identity $TestAccountName -NewName $FullName
+            }
+            If (($TestDisplayName -cne $FullName)) {
+                write-host "${TestDisplayName} Changed Display Name to: ${FullName}"
+                Set-ADUser -Identity $TestAccountName -DisplayName $FullName
             }
 
             # Set company for automatic mail group filtering
@@ -360,15 +367,21 @@ foreach($line in $input) {
                 write-host $LoginName, "Title change to: ${JobTitle}"
             }
 
+            # Get the year level of the current office string
+            If ($TestOffice) {
+                $test1 = $TestOffice.Substring($TestOffice.length-1,1)
+                $test2 = $TestOffice.Substring($TestOffice.length-2,2)
+            }
+
             # set Office to current year level
             If ($YearGroup.length -eq 1) {
-                If (($YearGroup) -ne ($TestOffice.Substring($TestOffice.length-1,1))) {
+                If (($YearGroup) -ne ($test1)) {
                     Set-ADUser -Identity $TestAccountName -Office $Position
                     write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
             }
             ElseIf ($YearGroup.length -eq 2) {
-                If (($YearGroup) -ne ($TestOffice.Substring($TestOffice.length-2,2))) {
+                If (($YearGroup) -ne ($test2)) {
                     Set-ADUser -Identity $TestAccountName -Office $Position
                     write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
@@ -377,8 +390,7 @@ foreach($line in $input) {
             # Set Department to identify current students
             If (!(($TestDepartment) -ceq ("Student"))) {
                 Set-ADUser -Identity $TestAccountName -Department "Student"
-                write-host $TestName, "Setting Position:", $TestDepartment
-                write-host "Student"
+                write-host "${TestName} Setting Position from ${TestDepartment} to Student"
             }
 
             # Add Employee Number if there is one
@@ -678,81 +690,55 @@ foreach($line in $input) {
     ######################################
 
     Else {
+        # Set user to confirm details
+        $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
+        $TestDN = $TestUser.distinguishedname
+        $TestDescription = $TestUser.Description
+        $TestEnabled = $TestUser.Enabled
+        $TestAccountName = $TestUser.SamAccountName
+        $TestMembership = $TestUser.MemberOf
 
         # Disable users with a termination date if they are still enabled
-        If (Get-ADUser -Filter { ((SamAccountName -eq $LoginName) -and (Enabled -eq "True")) }) {
+        If ($TestEnabled) {
 
+            # Don't disable users we want to keep
+            If ($TestDescription -eq "keep") {
+                write-host "${LoginName} Keeping terminated user"
+                write-host
+            }
             # Terminate Students AFTER their Termination date
-            If ($DATE -gt $Termination) {
-                write-host "DISABLING ACCOUNT ${$LoginName}"
-
-                # Set user to confirm details
-                $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-
-                If ($TestUser.Description -eq "keep") {
-                    write-host "${LoginName} Keeping terminated user"
-                }
-                ElseIf (!($TestUser -eq $null)) {
-
-                    # Get Details
-                    $TestName = $TestUser.Name
-                    $TestAccountName = $TestUser.SamAccountName
-
-                    if (!($TestUser.distinguishedname.Contains($DisablePath))) {
-
-                        # Move to disabled user OU if not already there
-                        Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
-                        write-host $TestAccountName "MOVED to Disabled OU"
-                    }
-
-                    # Check Group Membership
-                    if ($StudentGroup.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity "Students" -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED Students"
-                    }
-                    if ($5Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $5Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 5"
-                    }
-                    if ($6Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $6Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 6"
-                    }
-                    if ($7Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $7Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 7"
-                    }
-                    if ($8Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $8Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 8"
-                    }
-                    if ($9Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $9Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 9"
-                    }
-                    if ($10Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $10Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 10"
-                    }
-                    if ($11Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $11Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 11"
-                    }
-                    if ($12Group.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $12Name -Member $TestAccountName -Confirm:$false
-                        write-host $TestAccountName "REMOVED 12"
-                    }
-                    if ($MoodleStudentMembers.name.contains($TestName)) {
-                        Remove-ADGroupMember -Identity $MoodleStudent -Member $LoginName -Confirm:$false
-                        write-host $LoginName "removed from MoodleStudent Group"
-                    }
-                    #if ($OwncloudGroup.name.contains($TestName)) {
-                    #    Remove-ADGroupMember -Identity "owncloud_student" -Member $TestAccountName -Confirm:$false
-                    #    write-host $TestAccountName "REMOVED owncloud"
-                    #}
-
-                    # Disable The account
+            ElseIf ($DATE -gt $Termination) {
+                # Disable The account when we don't want to keep it
+                If ($TestUser) {
                     Set-ADUser -Identity $TestAccountName -Enabled $false
+                    write-host "DISABLING ACCOUNT ${$LoginName}"
+                    write-host
+                }
+            }
+        }
+        Else {
+            # Enforce Group and OU changes for disabled students
+            If ($TestUser) {
+                # Move to disabled user OU if not already there
+                if (!($TestDN.Contains($DisablePath))) {
+                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
+                    write-host "Moving: ${TestAccountName} to Disabled Student OU"
+                    write-host
+                }
+
+                # Remove groups if they are a member of any additional groups
+                If ($TestMembership) {
+                    write-host "Removing groups for ${TestAccountName}"
+                    write-host
+                    #remove All Villanova  Groups
+                    Foreach($GroupName In $TestMembership) {
+                        Try {
+                            Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
+                        }
+                        Catch {
+                            Write-Host "Error Removing ${GroupName}"
+                        }
+                    }
                 }
             }
         }
