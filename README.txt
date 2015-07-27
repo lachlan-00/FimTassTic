@@ -11,14 +11,14 @@ v2015.1
 
 Why do this?
 ------------
-This is a group of scripts I use to pull data from a SQL database using python and then fully automate user account creation using powershell.
+This is a group of scripts I use to pull data from a SQL database using python and then fully automate user account creation using PowerShell.
 
 
 About
 -----
-This is pirmarily a group of powershell scripts to automate user creation.
+This is primarily a group of PowerShell scripts to automate user creation.
 
-I have included the python scripts i use to pull our data from the employee/student database (TASS.web)
+I have included the python scripts I use to pull our data from the employee/student database (TASS.web)
 
 
 Requires
