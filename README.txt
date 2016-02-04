@@ -2,6 +2,21 @@
 FimTassTic: Automatic User Management using CSV data from TASS.web
 ------------------------------------------------------------------
 
+v2016.1
+-------
+ * Add email notification on account creation
+ * Add text file logging to allow emailing changes.
+ * Remove student mail creation from all-mailbox-create
+ * Add future students. (enrolled but not started yet)
+ * In moodle-courses-create don't filter category
+ * Add custom filter to reverse student data in export
+ * Use a secure string file to take password out of user scripts
+ * 365 mailbox creation for students
+ * email log files created by scripts
+ * moodle membership split into clear and add
+   (allow clear once per day and add multiple
+   times to allow for time changes.)
+
 v2015.1
 -------
  * Removed CSV files (you can create your own with the required columns)

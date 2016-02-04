@@ -1,6 +1,6 @@
 ###############################################################################
 ###                                                                         ###
-###  Create Staff and Student Email Accounts From TASS.web Data             ###
+###  Create Office365 Email Accounts From TASS.web Data                     ###
 ###                                                                         ###
 ###  ----------------Authors----------------                                ###
 ###  Lachlan de Waard <lachlan.00@gmail.com>                                ###
