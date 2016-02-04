@@ -32,9 +32,9 @@ write-host
 ### GLOBALS ###
 ###############
 
-$input = Import-CSV  ".\csv\fim_MoodleCourses.csv" -Encoding UTF8
+$input = Import-CSV ".\csv\fim_MoodleCourses.csv" -Encoding UTF8
 # Check for the length of the import so you don't overwrite the content
-$inputCount = (Import-CSV  ".\csv\fim_MoodleCourses.csv").count
+$inputCount = (Import-CSV ".\csv\fim_MoodleCourses.csv").count
 
 #######################################################
 ### Empty Groups so only current members will exist ###
@@ -54,7 +54,7 @@ Else {
         $category = $line.category_idnumber
 
         ### Remove membership from regular Courses
-    
+
         $coursestudent = "${courseid}-students"
         $courseteacher = "${courseid}-teachers"
 
@@ -95,7 +95,7 @@ Else {
             $coursestudent = "07-${classGroup}-students"
             $courseteacher = "07-${classGroup}-teachers"
 
-            ###  for year 7 student colour groups
+            ### for year 7 student colour groups
 
             # Students
             Try {

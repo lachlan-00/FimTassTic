@@ -26,7 +26,7 @@ import-module activedirectory
 . 'D:\Program Files\Microsoft\Exchange Server\V15\Bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto
 
 # Input CSV's
-$input = Import-CSV  .\csv\fim_staffALL.csv -Encoding UTF8
+$input = Import-CSV .\csv\fim_staffALL.csv -Encoding UTF8
 $StudentInput = Import-CSV .\csv\fim_student_filtered.csv -Encoding UTF8
 $enrolledinput = Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
 
@@ -74,7 +74,7 @@ foreach($line in $input) {
 
     # Check for staff who have left
     $Termination = $line.term_date.Trim()
-    
+
     # Set user to confirm details
     $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
     $TestEnabled = $TestUser.Enabled
@@ -85,7 +85,7 @@ foreach($line in $input) {
         If ($TestUser) {
             # Enable mailbox for user If mail address is missing
             if (!($TestUser.mail)) {
-                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}"  -Database All-Staff -AddressBookPolicy "Staff Address Policy"
+                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}" -Database All-Staff -AddressBookPolicy "Staff Address Policy"
                 Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
                 $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
             }

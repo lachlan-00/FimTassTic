@@ -32,9 +32,9 @@ write-host
 ### GLOBALS ###
 ###############
 
-$input = Import-CSV  ".\csv\fim_MoodleCourses.csv" -Encoding UTF8
+$input = Import-CSV ".\csv\fim_MoodleCourses.csv" -Encoding UTF8
 # Check for the length of the import so you don't overwrite the content
-$inputCount = (Import-CSV  ".\csv\fim_MoodleCourses.csv").count
+$inputCount = (Import-CSV ".\csv\fim_MoodleCourses.csv").count
 
 # OU paths for different user types
 $StudentPath = "OU=student,OU=ClassEnrolment,OU=moodle,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"

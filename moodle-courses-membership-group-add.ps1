@@ -32,11 +32,11 @@ write-host
 ### GLOBALS ###
 ###############
 
-$members = Import-CSV  ".\csv\fim_MoodleUsersCombined.csv" -Encoding UTF8
+$members = Import-CSV ".\csv\fim_MoodleUsersCombined.csv" -Encoding UTF8
 # Check for the length of the import so you don't overwrite the content
-$memberCount = (Import-CSV  ".\csv\fim_MoodleUsersCombined.csv").count
+$memberCount = (Import-CSV ".\csv\fim_MoodleUsersCombined.csv").count
 
-$CUSTOMmembers = Import-CSV  ".\csv\MoodleUSERS_CUSTOM.csv" -Encoding UTF8
+$CUSTOMmembers = Import-CSV ".\csv\MoodleUSERS_CUSTOM.csv" -Encoding UTF8
 
 #####################################################
 ### Check group membership for staff and students ###

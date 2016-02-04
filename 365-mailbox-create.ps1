@@ -32,20 +32,20 @@ import-module activedirectory
 ###
 ### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
 ###
-$pass = cat C:\DATA\365securestring.txt | convertto-securestring                                                           
-$mycred = new-object -typename System.Management.Automation.PSCredential -argumentlist "generic.admin@vnc.qld.edu.au",$pass     
+$pass = cat C:\DATA\365securestring.txt | convertto-securestring
+$mycred = new-object -typename System.Management.Automation.PSCredential -argumentlist "generic.admin@vnc.qld.edu.au",$pass
 Import-Module MSOnline
 $O365Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://ps.outlook.com/powershell -Authentication Basic -AllowRedirection -Credential $mycred
 Import-PSSession $O365Session
 Connect-MsolService -Credential $mycred 
 
 ### Input CSV's
-#$input = Import-CSV  .\csv\fim_staffALL.csv -Encoding UTF8
-$inputcount = (Import-CSV  ".\csv\fim_staffALL.csv" -Encoding UTF8 | Measure-Object).Count
+#$input = Import-CSV .\csv\fim_staffALL.csv -Encoding UTF8
+$inputcount = (Import-CSV ".\csv\fim_staffALL.csv" -Encoding UTF8 | Measure-Object).Count
 $StudentInput = Import-CSV ".\csv\fim_student.csv" -Encoding UTF8
-$StudentInputcount = (Import-CSV  ".\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
+$StudentInputcount = (Import-CSV ".\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
 $enrolledinput = Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
-$enrolledinputtcount = (Import-CSV  ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
+$enrolledinputtcount = (Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
 
 $userdomain = "VILLANOVA"
 
@@ -108,7 +108,7 @@ Get-MsolUser -all | Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUser -Usa
 #        If ($TestUser) {
 #            # Enable mailbox for user If mail address is missing
 #            if (!($TestUser.mail)) {
-#                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}"  -Database All-Staff -AddressBookPolicy "Staff Address Policy"
+#                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}" -Database All-Staff -AddressBookPolicy "Staff Address Policy"
 #                Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
 #                $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
 #            }

@@ -23,14 +23,14 @@
 ###############################################################################
 
 import-module activedirectory
-$input = Import-CSV  ".\csv\fim_staffALL.csv" -Encoding UTF8
-$inputcount = (Import-CSV  ".\csv\fim_staffALL.csv" -Encoding UTF8 | Measure-Object).Count
-$classinput = Import-CSV  ".\csv\fim_classes.csv" -Encoding UTF8
-$idinput = Import-CSV  ".\csv\_CUSTOM_STAFF_ID.csv" -Encoding UTF8
+$input = Import-CSV ".\csv\fim_staffALL.csv" -Encoding UTF8
+$inputcount = (Import-CSV ".\csv\fim_staffALL.csv" -Encoding UTF8 | Measure-Object).Count
+$classinput = Import-CSV ".\csv\fim_classes.csv" -Encoding UTF8
+$idinput = Import-CSV ".\csv\_CUSTOM_STAFF_ID.csv" -Encoding UTF8
 
 
 # Check for the length of the import so you don't overwrite the content
-$classCount = (Import-CSV  ".\csv\fim_classes.csv").count
+$classCount = (Import-CSV ".\csv\fim_classes.csv").count
 
 ### Get Default Password From Secure String File
 ### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
@@ -282,7 +282,7 @@ foreach($line in $input) {
         $Surname = $Surname -replace "O'n", "O'N"
         $Surname = $Surname -replace "O'r", "O'R"
 
-        $FullName =  "${PreferredName} ${Surname}"
+        $FullName = "${PreferredName} ${Surname}"
         $DisplayName = $FullName
         $DisplayName = $DisplayName -replace "Peter Wieneke", "Fr. Peter Wieneke OSA"
         #$DisplayName = $DisplayName -replace "Peter Morris", "Dr. Peter Morris"
@@ -474,7 +474,7 @@ ${Position}"
                 #write-output $TestAccountName "moved out of Disabled OU" | Out-File $LogFile -Append
                 $LogContents += "${TestAccountName} moved out of Disabled OU"
             }
-            ElseIf (($TestCompany  -ceq "Relief Teacher") -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
+            ElseIf (($TestCompany -ceq "Relief Teacher") -and (!($TestUser.distinguishedname.Contains($ReliefTeacherPath)))) {
                 Get-ADUser $TestAccountName | Move-ADObject -TargetPath $ReliefTeacherPath
                 #write-output $TestAccountName "moved to Relief Teacher OU" | Out-File $LogFile -Append
                 $LogContents += "${TestAccountName} moved to Relief Teacher OU"
@@ -482,13 +482,13 @@ ${Position}"
             ElseIf ($TestCompany -ceq "Teacher") {
                 If ($TestUser.distinguishedname.Contains($ReliefTeacherPath)) {
                     Get-ADUser $TestAccountName | Move-ADObject -TargetPath $TeacherPath
-                    #write-output $TestAccountName "moved to  Teacher OU from Relief Teachers" | Out-File $LogFile -Append
-                    $LogContents += "${TestAccountName} moved to  Teacher OU from Relief Teachers"
+                    #write-output $TestAccountName "moved to Teacher OU from Relief Teachers" | Out-File $LogFile -Append
+                    $LogContents += "${TestAccountName} moved to Teacher OU from Relief Teachers"
                 }
                 ElseIf (!($TestUser.distinguishedname.Contains($TeacherPath))) {
                     Get-ADUser $TestAccountName | Move-ADObject -TargetPath $TeacherPath
-                    #write-output $TestAccountName "moved to  Teacher OU" | Out-File $LogFile -Append
-                    $LogContents += "${TestAccountName} moved to  Teacher OU"
+                    #write-output $TestAccountName "moved to Teacher OU" | Out-File $LogFile -Append
+                    $LogContents += "${TestAccountName} moved to Teacher OU"
                 }
             }
             ElseIf (($TestCompany -ceq "Tutors") -and (!($TestUser.distinguishedname.Contains($TutorPath)))) {
@@ -586,7 +586,7 @@ ${Position}"
         If (($TeacherCode -ne $null) -and ($TeacherCode -ne "")) {
 
             # Set user to confirm details
-            $TestUser = (Get-ADUser  -Filter { (SamAccountName -eq $LoginName) }  -Properties *)
+            $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
             $TestAccountName = $TestUser.SamAccountName
             $TestDN = $TestUser.distinguishedname
             $TestDescription = $TestUser.Description
@@ -597,7 +597,7 @@ ${Position}"
                 write-host "Changing Company for ${TestAccountName} to Teacher"
                 write-host
                 #refresh details again
-                $TestUser = (Get-ADUser  -Filter { (SamAccountName -eq $LoginName) }  -Properties *)
+                $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
                 $TestAccountName = $TestUser.SamAccountName
                 $TestDescription = $TestUser.Description
             }
@@ -1019,14 +1019,14 @@ ${Position}"
                 If ($TestMembership) {
                     write-host "Removing groups for ${TestAccountName}"
                     write-host
-                    #remove All Villanova  Groups
+                    #remove All Villanova Groups
                     Foreach($GroupName In $VillanovaGroups) {
                         Try {
                             Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
                         }
                         Catch {
                             #Write-output "Error Removing ${TestAccountName} from ${GroupName}" | Out-File $LogFile -Append
-                            $LogContents +=  "Error Removing ${TestAccountName} from ${GroupName}"
+                            $LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
                         }
                     }
                 }
