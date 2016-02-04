@@ -23,11 +23,17 @@
 ###############################################################################
 
 import-module activedirectory
-$input = Import-CSV ".\csv\fim_student_filtered.csv" -Encoding UTF8
+$input = Import-CSV ".\csv\fim_student.csv" -Encoding UTF8
+$inputcount = (Import-CSV  ".\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
 $idinput = Import-CSV  ".\csv\_CUSTOM_STUDENT_ID.csv" -Encoding UTF8
 
+### Get Default Password From Secure String File
+### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
+###
+$userpass = cat C:\DATA\DefaultPassword.txt | convertto-securestring
+
 write-host
-write-host "### Starting Student Creation Script"
+write-host "### Starting Current Student Creation Script"
 write-host
 
 ###############
@@ -35,44 +41,33 @@ write-host
 ###############
 
 # OU paths for different user types
-$DisablePath = "OU=student,OU=users,OU=disabled,DC=example,DC=com,DC=au"
-$5Path = "OU=year5,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
-$6Path = "OU=year6,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
-$7Path = "OU=year7,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
-$8Path = "OU=year8,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
-$9Path = "OU=year9,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
-$10Path = "OU=year10,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
-$11Path = "OU=year11,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
-$12Path = "OU=year12,OU=student,OU=UserAccounts,DC=example,DC=com,DC=au"
+$DisablePath = "OU=student,OU=users,OU=disabled,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$5Path = "OU=year5,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$6Path = "OU=year6,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$7Path = "OU=year7,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$8Path = "OU=year8,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$9Path = "OU=year9,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$10Path = "OU=year10,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$11Path = "OU=year11,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$12Path = "OU=year12,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+
 # Security Group names for students
-$StudentName = "CN=Students,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$5Name = "CN=S-G_year5,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$6Name = "CN=S-G_year6,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$7Name = "CN=S-G_year7,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$8Name = "CN=S-G_year8,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$9Name = "CN=S-G_year9,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$10Name = "CN=S-G_year10,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$11Name = "CN=S-G_year11,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$12Name = "CN=S-G_year12,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$UserAdmin = "CN=Local-Users-Administrators,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$UserPower = "CN=Local-Users-Power_Users,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$UserRegular = "CN=Local-Users-Users,OU=security,OU=UserGroups,DC=example,DC=com,DC=au"
-$MoodleStudent = "CN=MoodleStudent,OU=RoleAssignment,OU=moodle,OU=UserGroups,DC=example,DC=com,DC=au"
-# Get membership for group Membership Tests
-$VillanovaGroups = Get-ADGroup -Filter *  -SearchBase "OU=UserGroups,DC=example,DC=com,DC=au"
-$StudentGroup = Get-ADGroupMember -Identity $StudentName
-$5Group = Get-ADGroupMember -Identity $5Name
-$6Group = Get-ADGroupMember -Identity $6Name
-$7Group = Get-ADGroupMember -Identity $7Name
-$8Group = Get-ADGroupMember -Identity $8Name
-$9Group = Get-ADGroupMember -Identity $9Name
-$10Group = Get-ADGroupMember -Identity $10Name
-$11Group = Get-ADGroupMember -Identity $11Name
-$12Group = Get-ADGroupMember -Identity $12Name
-$LocalAdmin = Get-ADGroupMember -Identity $UserAdmin
-$LocalPower = Get-ADGroupMember -Identity $UserPower
-$LocalUser = Get-ADGroupMember -Identity $UserRegular
-$MoodleStudentMembers = Get-ADGroupMember -Identity $MoodleStudent
+$StudentName = "CN=Students,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$GenericPrintCode = "CN=9001,OU=print,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$5Name = "CN=S-G_year5,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$6Name = "CN=S-G_year6,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$7Name = "CN=S-G_year7,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$8Name = "CN=S-G_year8,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$9Name = "CN=S-G_year9,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$10Name = "CN=S-G_year10,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$11Name = "CN=S-G_year11,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$12Name = "CN=S-G_year12,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$UserAdmin = "CN=Local-Users-Administrators,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$UserPower = "CN=Local-Users-Power_Users,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$UserRegular = "CN=Local-Users-Users,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$MoodleStudent = "CN=MoodleStudent,OU=RoleAssignment,OU=moodle,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$MoodleTechHelp = "CN=tech-help-students,OU=student,OU=ClassEnrolment,OU=moodle,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+
 # Get Date and Format Field to Match Termination Date
 $YEAR = [string](Get-Date).Year
 $MONTH = [string](Get-Date).Month
@@ -85,15 +80,71 @@ If ($DAY.length -eq 1) {
 }
 $DATE = "${YEAR}/${MONTH}/${DAY}"
 $DATE = "${DATE} 00:00:00"
+$LogDate = "${YEAR}-${MONTH}-${DAY}"
+
+#EMAIL SETTINGS
+# specify who gets notified 
+$tonotification = "it@vnc.qld.edu.au"
+# specify where the notifications come from 
+$fromnotification = "notifications@vnc.qld.edu.au"
+# specify the SMTP server 
+$smtpserver = "mail.vnc.qld.edu.au"
+# message for created users
+$emailsubject = "New AD User Created:"
+$emailbody = "New AD user created
+This is an automated email that is sent when a new user is created."
+# message for disabled users
+$disableemailsubject = "Current AD User Disabled:"
+$disableemailbody = "Current AD user disabled
+This is an automated email that is sent when an existing user is disabled."
+
+# Get membership for group Membership Tests
+$VillanovaGroups = Get-ADGroup -Filter *  -SearchBase "OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$StudentGroup = Get-ADGroupMember -Identity $StudentName
+$TestPrintGroup = Get-ADGroupMember -Identity $GenericPrintCode
+$5Group = Get-ADGroupMember -Identity $5Name
+$6Group = Get-ADGroupMember -Identity $6Name
+$7Group = Get-ADGroupMember -Identity $7Name
+$8Group = Get-ADGroupMember -Identity $8Name
+$9Group = Get-ADGroupMember -Identity $9Name
+$10Group = Get-ADGroupMember -Identity $10Name
+$11Group = Get-ADGroupMember -Identity $11Name
+$12Group = Get-ADGroupMember -Identity $12Name
+$LocalAdmin = Get-ADGroupMember -Identity $UserAdmin
+$LocalPower = Get-ADGroupMember -Identity $UserPower
+$LocalUser = Get-ADGroupMember -Identity $UserRegular
+$MoodleStudentMembers = Get-ADGroupMember -Identity $MoodleStudent
+$MoodleTechHelpMembers = Get-ADGroupMember -Identity $MoodleTechHelp
 
 write-host "### Completed importing groups"
 write-host
+
 
 ################################################
 ### Create / Edit / Disable student accounts ###
 ################################################
 
+# check log path
+if (!(Test-Path ".\log")) {
+    mkdir ".\log"
+}
+
+# set log file
+$LogFile = “.\log\student-${LogDate}.log”
+$LogContents = @()
+$tmpcount = 0
+$lastprogress = $NULL
+
+write-host "### Processing Current Student File..."
+Write-Host
+
 foreach($line in $input) {
+    $progress = ((($tmpcount / $inputcount) * 100) -as [int]) -as [string]
+    if (((((($tmpcount / $inputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
+        Write-Host "Progress: ${progress}%"
+    }
+    $tmpcount = $tmpcount + 1
+    $lastprogress = $progress
 
     # UserCode is the Unique Identifier for Students
     $UserCode = (Get-Culture).TextInfo.ToUpper($line.stud_code.Trim())
@@ -113,7 +164,13 @@ foreach($line in $input) {
     ### Process Current Students ###
     ################################
 
-    If ($Termination.length -eq 0) {
+    # Treat students who are not at their termination date as current
+    #If ($DATE -le $Termination) {
+    #    Write-Output "${LoginName} has termination date in the future. Process as current Student" | Out-File $LogFile -Append
+    #    Write-Output "${Termination}" | Out-File $LogFile -Append
+    #}
+
+    If (($Termination.length -eq 0) -or ($DATE -le $Termination)) {
 
         ################################
         ### Configure User Variables ###
@@ -200,22 +257,31 @@ foreach($line in $input) {
         $Surname = $Surname -replace "O'b", "O'B"
         $Surname = $Surname -replace "O'c", "O'C"
         $Surname = $Surname -replace "O'd", "O'D"
+        $Surname = $Surname -replace "O'g", "O'G"
         $Surname = $Surname -replace "O'k", "O'K"
         $Surname = $Surname -replace "O'n", "O'N"
         $Surname = $Surname -replace "O'r", "O'R"
 
         # Set remaining details
         $FullName =  "${PreferredName} ${Surname}"
-        $UserPrincipalName = "${LoginName}@example.com.au"
+        $AltFullName =  "${GivenName} ${Surname}"
+        ### Office 365 change ###$UserPrincipalName = "${LoginName}@villanova.vnc.qld.edu.au"
+        $UserPrincipalName = "${LoginName}@vnc.qld.edu.au"
         $Position = "Year ${YearGroup}"
         # Home Folders are only for younger grades
-        IF (($YearGroup -eq "5")-or ($YearGroup -eq "6")) {
-            $HomeDrive = "\\example.com.au\home\Student\${LoginName}"
-        }
-        Else {
-            $HomeDrive = $null
-        }
+        #IF (($YearGroup -eq "5")-or ($YearGroup -eq "6")) {
+        #    $HomeDrive = "\\villanova.vnc.qld.edu.au\home\Student\${LoginName}"
+        #}
+        #Else {
+        $HomeDrive = $null
+        #}
         $JobTitle = "Student - ${YEAR}"
+        
+        $emailbody = "New AD user created
+This is an automated email that is sent when a new user is created.
+${FullName}
+${LoginName}
+${Position}"
 
         ########################################
         ### Create / Modify Student Accounts ###
@@ -223,28 +289,35 @@ foreach($line in $input) {
 
         # Create basic user if you can't find one
         If (!(Get-ADUser -Filter { SamAccountName -eq $LoginName })) {
-            if (!($HomeDrive -eq $null)) {
-                Try  {
-                    New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "mypassword" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $True -homedrive "H" -homedirectory $HomeDrive
-                    write-host "${LoginName} created for ${FullName}"
-                    write-host
+            #if (!($HomeDrive -eq $null)) {
+            #    Try  {
+            #        New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword $userpass -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $False -homedrive "H" -homedirectory $HomeDrive
+            #        $LogContents += "New User ${LoginName} created for ${FullName}" #| Out-File $LogFile -Append
+            #        Send-MailMessage -From $fromnotification -Subject "${emailsubject} ${LoginName}" -To $tonotification -Body $emailbody -SmtpServer $smtpserver
+            #    }
+            #    Catch {
+            #        $LogContents += "The User ${LoginName} already exists for ${FullName}" #| Out-File $LogFile -Append
+            #    }
+            #}
+            #Else {
+            Try  {
+                New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword $userpass -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $False
+                $LogContents += "New User ${LoginName} created for ${FullName}" #| Out-File $LogFile -Append
+                Send-MailMessage -From $fromnotification -Subject "${emailsubject} ${LoginName}" -To $tonotification -Body $emailbody -SmtpServer $smtpserver
+            }
+            Catch {
+                Try {
+                    # Error's can occur when the name of a student matches and they are in the same grade.
+                    New-ADUser -SamAccountName $LoginName -Name $AltFullName -AccountPassword $userpass -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $False
+                    #write-host "Possible duplicate name"
+                    $LogContents += "New User ${LoginName} created for ${AltFullName}" #| Out-File $LogFile -Append
+                    Send-MailMessage -From $fromnotification -Subject "${emailsubject} ${LoginName}" -To $tonotification -Body $emailbody -SmtpServer $smtpserver
                 }
                 Catch {
-                    write-host "${LoginName} already exists for ${FullName}"
-                    write-host
+                    $LogContents += "The User ${LoginName} already exists for ${FullName} we tried: ${AltFullName}" #| Out-File $LogFile -Append
                 }
             }
-            Else {
-                Try  {
-                    New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword (ConvertTo-SecureString -AsPlainText "mypassword" -Force) -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $True
-                    write-host "${LoginName} created for ${FullName}"
-                    write-host
-                }
-                Catch {
-                    write-host "${LoginName} already exists for ${FullName}"
-                    write-host
-                }
-            }
+            #}
         }
 
         # Set user to confirm details
@@ -257,6 +330,7 @@ foreach($line in $input) {
         $TestDisplayName = $TestUser.DisplayName
         $TestDN = $TestUser.distinguishedname
         $TestAccountName = $TestUser.SamAccountName
+        $TestHomeDir = $TestUser.HomeDirectory
         $TestEnabled = $TestUser.Enabled
         $TestTitle = $TestUser.Title
         $TestCompany = $TestUser.Company
@@ -266,26 +340,51 @@ foreach($line in $input) {
         $TestNumber = $TestUser.employeeNumber
         $TestID = $TestUser.employeeID
 
+        # Get office365 details
+        $TestEmail = $TestUser.mail
+        If ($TestEmail) {
+            $TestEmail = $TestEmail.ToLower()
+        }
+        $TestPrincipal = $TestUser.UserPrincipalName
+
         # set additional user details if the user exists
         If ($TestUser) {
+
+            # Check that UPN is set to email. but only if an email exists
+            If (($TestEmail) -and (!($TestEmail -ceq $TestPrincipal))) {
+                Set-ADUser -Identity $TestDN -UserPrincipalName $TestEmail
+                $LogContents += "UPN CHANGE: ${TestPrincipal} to ${TestEmail}" #| Out-File $LogFile -Append
+                Write-Host "UPN CHANGE: ${TestPrincipal} to ${TestEmail}"
+            }
 
             # Enable user if disabled
             If ((!($TestEnabled)) -and (!($TestDescription -eq "disable"))) {
                 Set-ADUser -Identity $LoginName -Enabled $true
-                write-host "Enabling", $TestAccountName
+                $LogContents += "Enabling ${TestAccountName}" #| Out-File $LogFile -Append
+            }
+            # Disable if description contains disable
+            ElseIf (($TestEnabled) -and ($TestDescription -eq "disable")) {
+                Set-ADUser -Identity $LoginName -Enabled $false
+                $LogContents += "Disabling ${TestAccountName}" #| Out-File $LogFile -Append
             }
 
             # Move user to the default OU for their year level if not there
             if (($TestEnabled) -and (!($TestDN.Contains($UserPath)))) {
                 Get-ADUser $TestAccountName | Move-ADObject -TargetPath $UserPath
-                write-host $TestAccountName
-                write-host "Taking From: ${TestDN}"
-                write-host "Moving To:" $UserPath
+                $LogContents += "Taking ${TestAccountName} From: ${TestDN}" #| Out-File $LogFile -Append
+                $LogContents += "Moving ${TestAccountName} To: ${UserPath}" #| Out-File $LogFile -Append
             }
 
             If ((!($TestDescription -eq $UserCode)) -and (!($TestDescription -eq "disable"))) {
                 Set-ADUser -Identity $LoginName -Description $UserCode
                 write-host $FullName, "changing description from ${TestDescription} to ${UserCode}"
+                write-host
+            }
+
+            # Remove HomeDirectory for students who are not in year 5 or 6
+            If ((!($YearGroup -eq "5")) -and (!($YearGroup -eq "6")) -and $TestHomeDir) {
+                Set-ADUser -Identity $LoginName -HomeDirectory $null
+                Write-Host "${LoginName} doesn't need a home folder"
                 write-host
             }
 
@@ -298,9 +397,15 @@ foreach($line in $input) {
                 Set-ADUser -Identity $LoginName -Surname $Surname
                 write-host "${TestAccountName} Changed Surname to ${SurName}"
             }
-            If (($TestName -cne $FullName)) {
-                Rename-ADObject -Identity $TestAccountName -NewName $FullName
-                write-host "${TestAccountName} Changed Object Name to: ${FullName}"
+            If (($TestName -cne $FullName) -and ($TestName -cne $AltFullName)) {
+                Try {
+                    Rename-ADObject -Identity $TestDN -NewName $FullName
+                    write-host "${TestAccountName} Changed Object Name to: ${FullName}"
+                }
+                Catch {
+                    Rename-ADObject -Identity $TestDN -NewName $AltFullName
+                    write-host "${TestAccountName} Changed Object Name to: ${AltFullName}"
+                }
             }
             If (($TestDisplayName -cne $FullName)) {
                 Set-ADUser -Identity $LoginName -DisplayName $FullName
@@ -372,16 +477,28 @@ foreach($line in $input) {
                 $test1 = $TestOffice.Substring($TestOffice.length-1,1)
                 $test2 = $TestOffice.Substring($TestOffice.length-2,2)
             }
+            Else {
+                Set-ADUser -Identity $LoginName -Office $Position
+                write-host $LoginName, "Office missing; set to ${Position}"
+            }
 
             # set Office to current year level
             If ($YearGroup.length -eq 1) {
-                If (($YearGroup) -ne ($test1)) {
+                If ($YearGroup -ne $test1) {
+                    Set-ADUser -Identity $LoginName -Office $Position
+                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
+                }
+                ElseIf ($TestOffice -eq "Future Year ${YearGroup}") {
                     Set-ADUser -Identity $LoginName -Office $Position
                     write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
             }
             ElseIf ($YearGroup.length -eq 2) {
-                If (($YearGroup) -ne ($test2)) {
+                If ($YearGroup -ne $test2) {
+                    Set-ADUser -Identity $LoginName -Office $Position
+                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
+                }
+                ElseIf ($TestOffice -eq "Future Year ${YearGroup}") {
                     Set-ADUser -Identity $LoginName -Office $Position
                     write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
                 }
@@ -391,13 +508,6 @@ foreach($line in $input) {
             If (!(($TestDepartment) -ceq ("Student"))) {
                 Set-ADUser -Identity $LoginName -Department "Student"
                 write-host "${TestName} Setting Position from ${TestDepartment} to Student"
-            }
-
-            # Add Employee Number if there is one
-            if (!($LoginName -ceq $TestNumber)) {
-                Set-ADUser -Identity $LoginName -EmployeeNumber $LoginName
-                write-host "Setting employee Number (${employeeNumber}) for ${TestAccountName}"
-                write-host
             }
 
             # Check Group Membership
@@ -413,6 +523,16 @@ foreach($line in $input) {
             if (!($MoodleStudentMembers.name.contains($TestName))) {
                 Add-ADGroupMember -Identity $MoodleStudent -Member $LoginName
                 write-host $LoginName "added MoodleStudent Group"
+            }
+            # $MoodleTechHelpMembers
+            if (!($MoodleTechHelpMembers.name.contains($TestName))) {
+                Add-ADGroupMember -Identity $MoodleTechHelp -Member $LoginName
+                write-host $LoginName "added MoodleTechHelp Group"
+            }
+            # $TestPrintGroup
+            if (!($TestPrintGroup.name.contains($TestUser.name))) {
+                Add-ADGroupMember -Identity $GenericPrintCode -Member $TestAccountName
+                write-host $TestAccountName "added default printer group ${GenericPrintCode}"
             }
 
             # Remove groups for other grades and add the correct grade
@@ -647,19 +767,28 @@ foreach($line in $input) {
         }
         foreach($line in $idinput) {
             $tmpName = (Get-Culture).TextInfo.ToLower($line.stud_code.Trim())
-            $tmpID = (Get-Culture).TextInfo.ToUpper($line.idcard_nfc.Trim())
+            $tmpID = (Get-Culture).TextInfo.ToUpper($line.idcard_dec.Trim())
+            $tmpNum = (Get-Culture).TextInfo.ToUpper($line.idcard_nfc.Trim())
             If ($TestAccountName -eq $tmpName) {
                 If ($TestUser) {
-                    If (!($TestID -ceq $tmpID)) {
-                        if (($tmpID -eq "") -or ($tmpID -eq "#null!")) {
-                            #write-host "No ID Found for ${LoginName}"
-                            Set-ADUser -Identity $LoginName -EmployeeID $null
-                        }
-                        else {
-                            Set-ADUser -Identity $LoginName -EmployeeID $tmpID
-                            write-host "Setting ID (${tmpID}) for ${LoginName}"
-                            write-host
-                        }
+                    # warn about mismatched fields
+                    if ((!($tmpID.length -eq 0)) -and ($tmpNum.length -eq 0)) {
+                        write-host "missing hex for ${TestAccountName}"
+                    }
+                    if (($tmpID.length -eq 0) -and (!($tmpNum.length -eq 0))) {
+                        write-host "missing decimal for ${TestAccountName}"
+                    }
+                    # Add Employee ID if there is one
+                    if ((!($TestID -ceq $tmpID)) -and (!($tmpID.length -eq 0))) {
+                        Set-ADUser -Identity $LoginName -EmployeeID $tmpID
+                        write-host "Setting decimal employeeID (${tmpID}) for ${TestAccountName}"
+                        $LogContents += "Setting decimal employeeID (${tmpID}) for ${LoginName}"
+                    }
+                    # Add Employee Number if there is one
+                    if (!($TestNumber -ceq $tmpNum) -and (!($tmpNum.length -eq 0))) {
+                        Set-ADUser -Identity $LoginName -EmployeeNumber $tmpNum
+                        write-host "Setting Hex employeeNumber (${tmpNum}) for ${TestAccountName}"
+                        $LogContents += "Setting Hex employeeNumber (${tmpID}) for ${LoginName}"
                     }
                 }
             }
@@ -684,16 +813,19 @@ foreach($line in $input) {
 
             # Don't disable users we want to keep
             If ($TestDescription -eq "keep") {
-                write-host "${LoginName} Keeping terminated user"
-                write-host
+                If (!($LoginName -eq '10961')) {
+                    $LogContents += "${LoginName} Keeping terminated user" #| Out-File $LogFile -Append
+                }
             }
             # Terminate Students AFTER their Termination date
             ElseIf ($DATE -gt $Termination) {
                 # Disable The account when we don't want to keep it
                 If ($TestUser) {
                     Set-ADUser -Identity $LoginName -Enabled $false
-                    write-host "DISABLING ACCOUNT ${$LoginName}"
-                    write-host
+                    $LogContents += "DISABLING ACCOUNT ${TestAccountName}" #| Out-File $LogFile -Append
+                    $LogContents += "Now: ${DATE}" #| Out-File $LogFile -Append
+                    $LogContents += "DOL: ${Termination}" #| Out-File $LogFile -Append
+                    Send-MailMessage -From $fromnotification -Subject "${disableemailsubject} ${LoginName}" -To $tonotification -Body $disableemailbody -SmtpServer $smtpserver
                 }
             }
         }
@@ -703,8 +835,7 @@ foreach($line in $input) {
                 # Move to disabled user OU if not already there
                 if (!($TestDN.Contains($DisablePath))) {
                     Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
-                    write-host "Moving: ${TestAccountName} to Disabled Student OU"
-                    write-host
+                    $LogContents += "Moving: ${TestAccountName} to Disabled Student OU" #| Out-File $LogFile -Append
                 }
 
                 # Remove groups if they are a member of any additional groups
@@ -717,7 +848,7 @@ foreach($line in $input) {
                             Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
                         }
                         Catch {
-                            Write-Host "Error Removing ${GroupName}"
+                            $LogContents += "Error Removing ${TestAccountName} from ${GroupName}" #| Out-File $LogFile -Append
                         }
                     }
                 }
@@ -727,5 +858,272 @@ foreach($line in $input) {
 }
 
 write-host
-write-host "### Student Creation Script Finished"
+write-host "### Current Student Creation Script Finished"
 write-host
+
+#######################
+### FUTURE STUDENTS ###
+#######################
+
+write-host "### Starting Future Student Creation Script"
+write-host
+write-host "### Processing Future Student File..."
+Write-Host
+
+# Future students csv
+$enrolledinput = Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
+$enrolledcount = (Import-CSV  ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
+
+# OU paths for different user types
+$FuturePath = "OU=future,OU=student,OU=UserAccounts,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+
+$tmpcount = 0
+$lastprogress = $NULL
+
+foreach($line in $enrolledinput) {
+    $progress = ((($tmpcount / $enrolledcount) * 100) -as [int]) -as [string]
+    if (((((($tmpcount / $enrolledcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
+        Write-Host "Progress: ${progress}%"
+    }
+    $tmpcount = $tmpcount + 1
+    $lastprogress = $progress
+
+    # UserCode is the Unique Identifier for Students
+    $UserCode = (Get-Culture).TextInfo.ToUpper($line.stud_code.Trim())
+    $YearGroup = $line.entry_year_grp
+
+    # Correct usercode if opened in Excel
+    If ($UserCode.Length -ne 5) {
+            $UserCode = "0${UserCode}"
+    }
+
+    # Set Login Name
+    $LoginName = $UserCode
+
+    # Use future student OU by default
+    $UserPath = $FuturePath
+
+    ################################
+    ### Configure User Variables ###
+    ################################
+
+    # Set lower case because powershell ignores uppercase word changes to title case
+    If ((Get-Culture).TextInfo.ToUpper($line.preferred_name.Trim()) -eq $line.preferred_name.Trim()) {
+        $PreferredName = (Get-Culture).TextInfo.ToLower($line.preferred_name.Trim())
+        $PreferredName = (Get-Culture).TextInfo.ToTitleCase($line.preferred_name.Trim())
+    }
+    Else {
+        $PreferredName = ($line.preferred_name.Trim())
+    }
+    If ($LoginName -eq "11334") {
+        $PreferredName = "Seán"
+    }
+    if ((Get-Culture).TextInfo.ToUpper($line.given_name.Trim()) -eq $line.given_name.Trim()) {
+        $GivenName = (Get-Culture).TextInfo.ToLower($line.given_name.Trim())
+        $GivenName = (Get-Culture).TextInfo.ToTitleCase($line.given_name.Trim())
+    }
+    Else {
+        $GivenName = ($line.given_name.Trim())
+    }
+    If ((Get-Culture).TextInfo.ToUpper($line.surname.Trim()) -eq $line.surname.Trim()) {
+        $Surname = (Get-Culture).TextInfo.ToLower($line.surname.Trim())
+        $Surname = (Get-Culture).TextInfo.ToTitleCase($line.surname.Trim())
+    }
+    Else {
+        $Surname = ($line.surname.Trim())
+    }
+
+    # Replace Common Acronyms and name spellings
+    $Surname = $Surname -replace "D'a", "D'A"
+    $Surname = $Surname -replace "De L", "de L"
+    $Surname = $Surname -replace "De S", "de S"
+    $Surname = $Surname -replace "De W", "de W"
+    $Surname = $Surname -replace "Macl", "MacL"
+    $Surname = $Surname -replace "Mcb", "McB"
+    $Surname = $Surname -replace "Mcc", "McC"
+    $Surname = $Surname -replace "Mcd", "McD"
+    $Surname = $Surname -replace "Mcg", "McG"
+    $Surname = $Surname -replace "Mci", "McI"
+    $Surname = $Surname -replace "Mck", "McK"
+    $Surname = $Surname -replace "Mcl", "McL"
+    $Surname = $Surname -replace "Mcm", "McM"
+    $Surname = $Surname -replace "Mcn", "McN"
+    $Surname = $Surname -replace "Mcp", "McP"
+    $Surname = $Surname -replace "Mcw", "McW"
+    $Surname = $Surname -replace "O'b", "O'B"
+    $Surname = $Surname -replace "O'c", "O'C"
+    $Surname = $Surname -replace "O'd", "O'D"
+    $Surname = $Surname -replace "O'g", "O'G"
+    $Surname = $Surname -replace "O'k", "O'K"
+    $Surname = $Surname -replace "O'n", "O'N"
+    $Surname = $Surname -replace "O'r", "O'R"
+
+    # Set remaining details
+    $FullName =  "${PreferredName} ${Surname}"
+    $UserPrincipalName = "${LoginName}@vnc.qld.edu.au"
+    
+    # Home Folders are only for younger grades
+    $HomeDrive = $null
+
+    # Position and title
+
+    $JobTitle = "Future Student"
+    $Position = "Future Year ${YearGroup}"
+    
+        $emailbody = "New AD user created
+This is an automated email that is sent when a new user is created.
+${FullName}
+${LoginName}
+${Position}"
+
+    ########################################
+    ### Create / Modify Student Accounts ###
+    ########################################
+
+    # Create basic user if you can't find one
+    If (!(Get-ADUser -Filter { SamAccountName -eq $LoginName })) {
+        Try  {
+            New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword $userpass -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -Description $UserCode -ChangePasswordAtLogon $False
+            $LogContents += "${LoginName} created for ${FullName}" #| Out-File $LogFile -Append
+            Send-MailMessage -From $fromnotification -Subject "${emailsubject} ${LoginName}" -To $tonotification -Body $emailbody -SmtpServer $smtpserver
+        }
+        Catch {
+            # ignore future student error
+            #$LogContents += "The username ${LoginName} for Future student ${FullName} already exists" #| Out-File $LogFile -Append
+        }
+    }
+    Else {
+        # Set user to confirm details
+        $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
+
+        # Get User Details
+        $TestName = $TestUser.Name
+        $TestGiven = $TestUser.GivenName
+        $TestSurname = $TestUser.SurName
+        $TestDisplayName = $TestUser.DisplayName
+        $TestDN = $TestUser.distinguishedname
+        $TestAccountName = $TestUser.SamAccountName
+        $TestHomeDir = $TestUser.HomeDirectory
+        $TestEnabled = $TestUser.Enabled
+        $TestTitle = $TestUser.Title
+        $TestCompany = $TestUser.Company
+        $TestOffice = $TestUser.Office
+        $TestDescription = $TestUser.Description
+        $TestDepartment = $TestUser.Department
+        $TestNumber = $TestUser.employeeNumber
+        $TestID = $TestUser.employeeID
+
+        # Get office365 details
+        $TestEmail = $TestUser.mail
+        If ($TestEmail) {
+            $TestEmail = $TestEmail.ToLower()
+        }
+        $TestPrincipal = $TestUser.UserPrincipalName
+
+        # set additional user details if the user exists
+        If ($TestUser) {
+
+            # Check that UPN is set to email. but only if an email exists
+            If (($TestEmail) -and (!($TestEmail -ceq $TestPrincipal))) {
+                Set-ADUser -Identity $TestDN -UserPrincipalName $TestEmail
+                $LogContents += "UPN CHANGE: ${TestPrincipal} to ${TestEmail}" #| Out-File $LogFile -Append
+            }
+
+            # set description to stud_code
+            If (!($TestDescription -eq $UserCode)) {
+                Set-ADUser -Identity $LoginName -Description $UserCode
+                write-host "${TestAccountName} changing description from ${TestDescription} to ${UserCode}"
+                write-host
+            }
+
+            # Check Name Information
+            If ($TestGiven -cne $PreferredName) {
+                Set-ADUser -Identity $LoginName -GivenName $PreferredName
+                write-host "${TestAccountName} Changed Given Name to ${PreferredName}"
+            }
+            If ($TestSurname -cne $Surname) {
+                Set-ADUser -Identity $LoginName -Surname $Surname
+                write-host "${TestAccountName} Changed Surname to ${SurName}"
+            }
+            If (($TestName -cne $FullName)) {
+                Rename-ADObject -Identity $TestDN -NewName $FullName
+                write-host "${TestAccountName} Changed Object Name to: ${FullName}"
+            }
+            If (($TestDisplayName -cne $FullName)) {
+                Set-ADUser -Identity $LoginName -DisplayName $FullName
+                write-host "${TestAccountName} Changed Display Name to: ${FullName}"
+            }
+
+            # Set Year Level and Title
+            If (($TestTitle) -eq $null) {
+                Set-ADUser -Identity $LoginName -Title $JobTitle
+                write-host "${TestAccountName} Title set: ${JobTitle}"
+            }
+            ElseIf (!($TestTitle).contains($JobTitle)) {
+                Set-ADUser -Identity $LoginName -Title $JobTitle
+                write-host "${TestAccountName} Title change to: ${JobTitle}"
+            }
+
+            # Get the year level of the current office string
+            If ($TestOffice) {
+                $test1 = $TestOffice.Substring($TestOffice.length-1,1)
+                $test2 = $TestOffice.Substring($TestOffice.length-2,2)
+            }
+            Else {
+                Set-ADUser -Identity $LoginName -Office $Position
+                write-host "${TestAccountName} Office missing; set to ${Position}"
+            }
+
+            # set Office to current year level
+            If ($YearGroup.length -eq 1) {
+                If ($YearGroup -ne $test1) {
+                    Set-ADUser -Identity $LoginName -Office $Position
+                    write-host "${TestAccountName} year level change from ${TestOffice} to ${Position}"
+                }
+            }
+            ElseIf ($YearGroup.length -eq 2) {
+                If ($YearGroup -ne $test2) {
+                    Set-ADUser -Identity $LoginName -Office $Position
+                    write-host "${TestAccountName} year level change from ${TestOffice} to ${Position}"
+                }
+            }
+
+            # Set Department to identify current students
+            If (!(($TestDepartment) -ceq ("Future"))) {
+                Set-ADUser -Identity $LoginName -Department "Future"
+                write-host "${TestAccountName} Setting Position  to 'Future'"
+            }
+
+            # Add Employee Number if there is one
+            if (!($LoginName -ceq $TestNumber)) {
+                Set-ADUser -Identity $LoginName -EmployeeNumber $LoginName
+                write-host "${TestAccountName} Setting employee Number"
+                write-host
+            }
+        }
+        Else {
+            write-host "missing or ignoring ${FullName}: ${LoginName}"
+            write-host
+        }
+    }
+}
+
+Write-Host
+Write-Host "### Future Student file finished"
+Write-Host
+
+# Write log if changes have occurred
+If ($LogContents.Count -gt 0) {
+    Write-Host "Writing changes to log file"
+    Write-output "" | Out-File $LogFile -Append
+    Get-Date | Out-File $LogFile -Append
+    foreach($line in $LogContents) {
+        Write-Output $line | Out-File $LogFile -Append
+    }
+}
+Else {
+    Write-Host "No Important Changes were logged"
+}
+
+Write-Host
+Write-Host "DONE"
