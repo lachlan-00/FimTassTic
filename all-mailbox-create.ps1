@@ -96,6 +96,13 @@ foreach($line in $input) {
                 Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
                 $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
             }
+            #Enable Archive mailbox for user if missing
+            if (!($TestUser.msExchArchiveDatabaseLink)) {
+                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Archive  -ArchiveDatabase Archive-Staff
+                $LogContents += "Created archive mailbox for ${LoginName}" #| Out-File $LogFile -Append
+
+            }
+
         }
     }
 
