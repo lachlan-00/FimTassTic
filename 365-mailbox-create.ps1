@@ -1,6 +1,6 @@
 ###############################################################################
 ###                                                                         ###
-###  Create Office365 Email Accounts From TASS.web Data                     ###
+###  Create Staff and Student Email Accounts From TASS.web Data             ###
 ###                                                                         ###
 ###  ----------------Authors----------------                                ###
 ###  Lachlan de Waard <lachlan.00@gmail.com>                                ###
@@ -26,21 +26,32 @@
 import-module activedirectory
 
 ### On Premise Exchange
-. 'D:\Program Files\Microsoft\Exchange Server\V15\Bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto
+if (Get-Command Get-Mailbox) {
+    #write-host "Exchange is imported"
+}
+Else {
+    #write-host "importing exchange module"
+    . 'D:\Program Files\Microsoft\Exchange Server\V15\Bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto
+}
 
-### Office 365 Connector
+### Office 365 Connector (check for Add-RecipientPermission)
 ###
 ### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
 ###
-$pass = cat C:\DATA\365securestring.txt | convertto-securestring
-$mycred = new-object -typename System.Management.Automation.PSCredential -argumentlist "generic.admin@vnc.qld.edu.au",$pass
-Import-Module MSOnline
-$O365Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://ps.outlook.com/powershell -Authentication Basic -AllowRedirection -Credential $mycred
-Import-PSSession $O365Session
-Connect-MsolService -Credential $mycred 
+if (Get-Command Add-RecipientPermission) {
+    #write-host "365 is imported"
+}
+Else {
+    $pass = cat C:\DATA\365securestring.txt | convertto-securestring
+    $mycred = new-object -typename System.Management.Automation.PSCredential -argumentlist "generic.admin@vnc.qld.edu.au",$pass
+    Import-Module MSOnline
+    $O365Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://ps.outlook.com/powershell -Authentication Basic -AllowRedirection -Credential $mycred
+    Import-PSSession $O365Session
+    Connect-MsolService -Credential $mycred
+}
 
 ### Input CSV's
-#$input = Import-CSV .\csv\fim_staffALL.csv -Encoding UTF8
+$input = Import-CSV ".\csv\fim_staffALL.csv" -Encoding UTF8
 $inputcount = (Import-CSV ".\csv\fim_staffALL.csv" -Encoding UTF8 | Measure-Object).Count
 $StudentInput = Import-CSV ".\csv\fim_student.csv" -Encoding UTF8
 $StudentInputcount = (Import-CSV ".\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
@@ -74,75 +85,68 @@ if (!(Test-Path ".\log")) {
 }
 
 # set log file
-$LogFile = “.\log\Email-Creation-${LogDate}.log”
+$LogFile = ".\log\Email-Creation-${LogDate}.log"
 $LogContents = @()
 
 #####################################
 ### Set 365 Location to Australia ###
 #####################################
 
+write-host "### Checking all users are assigned to the AU 365 Location"
+write-host
+
 Get-MsolUser -all | Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUser -UsageLocation AU
 
-#############################################
-### Create / Disable Staff Email Accounts ###
-#############################################
+##############################################
+### Create Staff 365 Accounts and licenses ###
+##############################################
 
-#write-host "### Parsing Staff File"
-#write-host
+write-host "### Parsing Staff File"
+write-host
 
-#foreach($line in $input) {
+$tmpcount = 0
+$lastprogress = $NULL
 
-#    # Get login name for processing
-#    $LoginName = (Get-Culture).TextInfo.ToLower($line.emp_code.Trim())
+foreach($line in $Input) {
+    $progress = ((($tmpcount / $Inputcount) * 100) -as [int]) -as [string]
+    if (((((($tmpcount / $Inputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
+        Write-Host "Progress: ${progress}%"
+    }
+    $tmpcount = $tmpcount + 1
+    $lastprogress = $progress
 
-#    # Check for staff who have left
-#    $Termination = $line.term_date.Trim()
-    
-#    # Set user to confirm details
-#    $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
-#    $TestEnabled = $TestUser.Enabled
-#    $TestDescription = $TestUser.Description
+    # Get login name for processing
+    $LoginName = (Get-Culture).TextInfo.ToLower($line.emp_code.Trim())
 
-#    ### Process Current Users ###
-#    If ($Termination.length -eq 0) {
-#        If ($TestUser) {
-#            # Enable mailbox for user If mail address is missing
-#            if (!($TestUser.mail)) {
-#                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}" -Database All-Staff -AddressBookPolicy "Staff Address Policy"
-#                Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
-#                $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
-#            }
-#        }
-#    }
+    # Check for staff who have left
+    $Termination = $line.term_date.Trim()
 
-#    ### Process Terminated Users ###
-    
-#    Else {
-#        # keep some users
-#        If ($TestDescription -eq "keep") {
-#            If (!($LoginName -eq '10961')) {
-#                $LogContents += "${LoginName} Keeping terminated user" #| Out-File $LogFile -Append
-#            }
-#        }
-#        # Terminate Staff AFTER their Termination date
-#        ElseIf ($FULLDATE -gt $Termination) {
-#            If ($TestUser) {
-#                # Disable mailbox for users that have a mail address
-#                if ($TestUser.mail) {
-#                    #Disable-Mailbox -Identity $TestUser.name -Confirm:$false
-#                    Disable-Mailbox -Identity "${userdomain}\${LoginName}" -Confirm:$false
-#                    $LogContents += "Disabled mailbox for ${LoginName}" #| Out-File $LogFile -Append
-#                }
-#            }
-#        }
-#        # Wait for the Termination date
-#        #ElseIf ((!($FULLDATE -gt $Termination)) -and (!($Termination.length -eq 0))) {
-#        #    $LogContents += "Not Final Leaving Date for ${LoginName}" #| Out-File $LogFile -Append
-#        #    $LogContents += "Now: ${DATE}" #| Out-File $LogFile -Append
-#        #    $LogContents += "DOL: ${Termination}" #| Out-File $LogFile -Append
-#        #}
-#    }
-#}
+    # Set user to confirm details
+    $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
+    $TestEnabled = $TestUser.Enabled
+    $TestDescription = $TestUser.Description
+    $SchoolEmail = $TestUser.UserPrincipalName
+
+    ### Process Current Users ###
+    If ($Termination.length -eq 0) {
+        If (($TestUser) -and ($SchoolEmail)) {
+
+            # get location and check for existing license
+            $testusagelocation = (Get-MsolUser -UserPrincipalName $SchoolEmail).UsageLocation
+            $test365license = (Get-MsolUser -UserPrincipalName $SchoolEmail).isLicensed
+
+            # Only Add licenses when users have a location set to AU
+            If (!($test365license) -and ($testusagelocation -ceq "AU")) {
+                write-host "Missing 365 License for ${LoginName}... Adding."
+                Get-MsolUser -UserPrincipalName $SchoolEmail| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                $LogContents += "Added Faculty 365 License for: ${LoginName}" #| Out-File $LogFile -Append
+            }
+            #If ($test365license) {
+            #    write-host "365 already licensed for ${LoginName}"
+            #}
+        }
+    }
+}
 
 write-host "### Parsing Student File"
 write-host
@@ -183,8 +187,8 @@ foreach($line in $StudentInput) {
             Catch {
                 $testmailenabled = $null
             }
-            $testusagelocation = (Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au").UsageLocation
-            $test365license = (Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au").isLicensed
+            $testusagelocation = (Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au").UsageLocation
+            $test365license = (Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au").isLicensed
 
             # Only work on users that have a 365 mail account
             If ($testmailenabled) {
@@ -192,7 +196,7 @@ foreach($line in $StudentInput) {
                 # Only Add licenses when users have a location set to AU
                 If (!($test365license) -and ($testusagelocation -ceq "AU")) {
                     write-host "Missing 365 License for ${LoginName}... Adding."
-                    Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au"| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                    Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au"| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
                     $LogContents += "Added Student 365 License for: ${LoginName}" #| Out-File $LogFile -Append
                 }
             }
@@ -204,77 +208,27 @@ foreach($line in $StudentInput) {
             If ($test365license) {
                 #write-host "365 already licensed for ${LoginName}"
             }
-            # Enable mailbox for user If mail address is missing
-            #if (!($TestUser.mail)) {
-#           #     Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}" -Database All-Student -AddressBookPolicy "Student Address Policy"
-#           #     Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 5
-            #    $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
-            #}
         }
     }
-    ### Process Terminated Users ###
-    #Else {
-    #    # keep some users
-    #    If ($TestDescription -eq "keep") {
-    #        If (!($LoginName -eq '10961')) {
-    #            $LogContents += "${LoginName} Keeping terminated user" #| Out-File $LogFile -Append
-    #        }
-    #    }
-    #    # Terminate Students AFTER their Termination date
-    #    ElseIf ($DATE -gt $Termination) {
-    #        If ($TestUser) {
-    #            # Check for remote user
-    #            Try {
-    #                $testremoteuser = Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au"                
-    #            }
-    #            Catch {
-    #                $testremoteuser = $null
-    #            }
-    #            # Check for 365 mail account
-    #            Try {
-    #                $testmailenabled = Get-Mailbox -Identity $LoginName
-    #            }
-    #            Catch {
-    #                $testmailenabled = $null
-    #            }
-    #            $testusagelocation = (Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au").UsageLocation
-    #            $test365license = (Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au").isLicensed
-
-    #            # Only work on users that have a 365 mail account
-    #            # Disable mailbox for users that have a mail address
-    #            If (($testremoteuser) -and ($testmailenabled)) {
-    #                Disable-RemoteMailbox -Identity "${LoginName}" -Confirm:$true
-    #                #Disable-RemoteMailbox -Identity "${LoginName}" -Confirm:$false
-    #                $LogContents += "Disabled mailbox for ${LoginName}" #| Out-File $LogFile -Append
-    #            }
-    #        }
-    #    }
-    #    # Wait for the Termination date
-    #    #ElseIf ((!($DATE -gt $Termination)) -and (!($Termination.length -eq 0))) {
-    #    #    $LogContents += "Not Final Leaving Date for ${LoginName}" #| Out-File $LogFile -Append
-    #    #    $LogContents += "Now: ${DATE}" #| Out-File $LogFile -Append
-    #    #    $LogContents += "DOL: ${Termination}" #| Out-File $LogFile -Append
-    #    #}
-    #}
 }
 
 write-host "### Parsing Future Student File"
 write-host
 
-$tmpcount = 0
-$lastprogress = $NULL
-
 ############################################
 ### Create FUTURE Student Email Accounts ###
 ############################################
 
+$tmpcount = 0
+$lastprogress = $NULL
+
 foreach($line in $enrolledinput) {
-    #$progress = ((($tmpcount / $enrolledinputcount) * 100) -as [int]) -as [string]
-    #if (((((($tmpcount / $enrolledinputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
-    #    Write-Host "Progress: ${progress}%"
-    #}
-    #$tmpcount = $tmpcount + 1
-    #$lastprogress = $progress
+    $progress = ((($tmpcount / $enrolledinputcount) * 100) -as [int]) -as [string]
+    if (((((($tmpcount / $enrolledinputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
+        Write-Host "Progress: ${progress}%"
+    }
+    $tmpcount = $tmpcount + 1
+    $lastprogress = $progress
 
     # Get login name for processing
     $LoginName = (Get-Culture).TextInfo.ToLower($line.stud_code.Trim())
@@ -293,8 +247,8 @@ foreach($line in $enrolledinput) {
             Catch {
                 $testmailenabled = $null
             }
-            $testusagelocation = (Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au").UsageLocation
-            $test365license = (Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au").isLicensed
+            $testusagelocation = (Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au").UsageLocation
+            $test365license = (Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au").isLicensed
 
             # Only work on users that have a 365 mail account
             If ($testmailenabled) {
@@ -302,7 +256,7 @@ foreach($line in $enrolledinput) {
                 # Only Add licenses when users have a location set to AU
                 If (!($test365license) -and ($testusagelocation -ceq "AU")) {
                     write-host "Missing 365 License for ${LoginName}... Adding."
-                    Get-MsolUser –UserPrincipalName "${LoginName}@vnc.qld.edu.au"| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                    Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au"| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
                     $LogContents += "Added Student 365 License for: ${LoginName}" #| Out-File $LogFile -Append
                 }
             }

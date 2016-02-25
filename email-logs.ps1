@@ -39,8 +39,8 @@ $LogDate = "${YEAR}-${MONTH}-${DAY}"
 
 
 # Email attachments to add
-$filestaff = “.\log\staff-${LogDate}.log”
-$filestudent = “.\log\student-${LogDate}.log”
+$filestaff = ".\log\staff-${LogDate}.log"
+$filestudent = ".\log\student-${LogDate}.log"
 
 #EMAIL SETTINGS
 # specify who gets notified 

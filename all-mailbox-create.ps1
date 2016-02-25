@@ -23,10 +23,17 @@
 ###############################################################################
 
 import-module activedirectory
-. 'D:\Program Files\Microsoft\Exchange Server\V15\Bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto
+
+if (Get-Command Get-Mailbox) {
+    #write-host "Exchange is imported"
+}
+Else {
+    #write-host "importing exchange module"
+    . 'D:\Program Files\Microsoft\Exchange Server\V15\Bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto
+}
 
 # Input CSV's
-$input = Import-CSV .\csv\fim_staffALL.csv -Encoding UTF8
+$input = Import-CSV  .\csv\fim_staffALL.csv -Encoding UTF8
 $StudentInput = Import-CSV .\csv\fim_student_filtered.csv -Encoding UTF8
 $enrolledinput = Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
 
@@ -64,7 +71,7 @@ if (!(Test-Path ".\log")) {
 }
 
 # set log file
-$LogFile = “.\log\Email-Creation-${LogDate}.log”
+$LogFile = ".\log\Email-Creation-${LogDate}.log"
 $LogContents = @()
 
 foreach($line in $input) {
@@ -85,7 +92,7 @@ foreach($line in $input) {
         If ($TestUser) {
             # Enable mailbox for user If mail address is missing
             if (!($TestUser.mail)) {
-                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}" -Database All-Staff -AddressBookPolicy "Staff Address Policy"
+                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}"  -Database All-Staff -AddressBookPolicy "Staff Address Policy"
                 Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
                 $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
             }

@@ -24,8 +24,8 @@
 
 import-module activedirectory
 $input = Import-CSV ".\csv\fim_student.csv" -Encoding UTF8
-$inputcount = (Import-CSV  ".\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
-$idinput = Import-CSV  ".\csv\_CUSTOM_STUDENT_ID.csv" -Encoding UTF8
+$inputcount = (Import-CSV ".\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
+$idinput = Import-CSV ".\csv\_CUSTOM_STUDENT_ID.csv" -Encoding UTF8
 
 ### Get Default Password From Secure String File
 ### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
@@ -99,7 +99,7 @@ $disableemailbody = "Current AD user disabled
 This is an automated email that is sent when an existing user is disabled."
 
 # Get membership for group Membership Tests
-$VillanovaGroups = Get-ADGroup -Filter *  -SearchBase "OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$VillanovaGroups = Get-ADGroup -Filter * -SearchBase "OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $StudentGroup = Get-ADGroupMember -Identity $StudentName
 $TestPrintGroup = Get-ADGroupMember -Identity $GenericPrintCode
 $5Group = Get-ADGroupMember -Identity $5Name
@@ -130,7 +130,7 @@ if (!(Test-Path ".\log")) {
 }
 
 # set log file
-$LogFile = “.\log\student-${LogDate}.log”
+$LogFile = ".\log\student-${LogDate}.log"
 $LogContents = @()
 $tmpcount = 0
 $lastprogress = $NULL
@@ -788,7 +788,7 @@ ${Position}"
                     if (!($TestNumber -ceq $tmpNum) -and (!($tmpNum.length -eq 0))) {
                         Set-ADUser -Identity $LoginName -EmployeeNumber $tmpNum
                         write-host "Setting Hex employeeNumber (${tmpNum}) for ${TestAccountName}"
-                        $LogContents += "Setting Hex employeeNumber (${tmpID}) for ${LoginName}"
+                        $LogContents += "Setting Hex employeeNumber (${tmpNum}) for ${LoginName}"
                     }
                 }
             }
@@ -804,6 +804,9 @@ ${Position}"
         $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
         $TestDN = $TestUser.distinguishedname
         $TestDescription = $TestUser.Description
+        $TestTitle = $TestUser.Title
+        $TestCompany = $TestUser.Company
+        $TestDepartment = $TestUser.Department
         $TestEnabled = $TestUser.Enabled
         $TestAccountName = $TestUser.SamAccountName
         $TestMembership = $TestUser.MemberOf
@@ -829,27 +832,41 @@ ${Position}"
                 }
             }
         }
-        Else {
-            # Enforce Group and OU changes for disabled students
-            If ($TestUser) {
-                # Move to disabled user OU if not already there
-                if (!($TestDN.Contains($DisablePath))) {
-                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
-                    $LogContents += "Moving: ${TestAccountName} to Disabled Student OU" #| Out-File $LogFile -Append
+        ElseIf ($TestUser) {
+            # Move to disabled user OU if not already there
+            if (!($TestDN.Contains($DisablePath))) {
+                Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
+                $LogContents += "Moving ${LoginName}: ${TestAccountName} to Disabled Student OU" #| Out-File $LogFile -Append
+            }
+            else {
+                # Set Department to "Disabled" to help identify current students
+                If (!(($TestDepartment) -ceq ("Disabled"))) {
+                    Set-ADUser -Identity $LoginName -Department "Disabled"
+                    write-host "${LoginName} Setting Position from ${TestDepartment} to Disabled"
                 }
+                # Set Company to "Disabled" to help identify current students
+                if (!($TestCompany -ceq "Disabled")) {
+                    Set-ADUser -Identity $LoginName -Company "Disabled"
+                    write-host "${LoginName} set company to Disabled"
+                }
+                # Set Title to "Disabled" to help identify current students
+                If (!($TestTitle -ceq "Disabled")) {
+                    Set-ADUser -Identity $LoginName -Title "Disabled"
+                    write-host "${LoginName} Title change to: Disabled"
+                }
+            }
 
-                # Remove groups if they are a member of any additional groups
-                If ($TestMembership) {
-                    write-host "Removing groups for ${TestAccountName}"
-                    write-host
-                    #remove All Villanova  Groups
-                    Foreach($GroupName In $TestMembership) {
-                        Try {
-                            Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
-                        }
-                        Catch {
-                            $LogContents += "Error Removing ${TestAccountName} from ${GroupName}" #| Out-File $LogFile -Append
-                        }
+            # Remove groups if they are a member of any additional groups
+            If ($TestMembership) {
+                write-host "Removing groups for ${TestAccountName}"
+                write-host
+                #remove All Villanova  Groups
+                Foreach($GroupName In $TestMembership) {
+                    Try {
+                        Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
+                    }
+                    Catch {
+                        $LogContents += "Error Removing ${TestAccountName} from ${GroupName}" #| Out-File $LogFile -Append
                     }
                 }
             }
@@ -1021,7 +1038,8 @@ ${Position}"
         $TestPrincipal = $TestUser.UserPrincipalName
 
         # set additional user details if the user exists
-        If ($TestUser) {
+        # (If a student has previously left and been renrolled they will be disabled until their return.)
+        If (($TestUser) -and ($TestDN -contains $UserPath)) {
 
             # Check that UPN is set to email. but only if an email exists
             If (($TestEmail) -and (!($TestEmail -ceq $TestPrincipal))) {
@@ -1101,10 +1119,10 @@ ${Position}"
                 write-host
             }
         }
-        Else {
-            write-host "missing or ignoring ${FullName}: ${LoginName}"
-            write-host
-        }
+        #Else {
+        #    write-host "missing or ignoring ${FullName}: ${LoginName}"
+        #    write-host
+        #}
     }
 }
 

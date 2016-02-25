@@ -60,6 +60,7 @@ $StaffName = "CN=Staff,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=e
 $TeacherName = "CN=S-G_Teachers,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $TeacherMapName = "CN=Map-Teachers,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $MoodleName = "CN=MoodleTeacher,OU=RoleAssignment,OU=moodle,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$MoodlePlaypen = "CN=PP-teachers,OU=teacher,OU=ClassEnrolment,OU=moodle,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 #$CanonName = "CN=Printer-Canon-Staff,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $GenericPrintCode = "CN=9000,OU=print,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $Teach5Name = "CN=S-G_Teacher-Year5,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
@@ -119,6 +120,7 @@ $TestStaff = Get-ADGroupMember -Identity $StaffName
 $TestPrintGroup = Get-ADGroupMember -Identity $GenericPrintCode
 $TestTeachers = Get-ADGroupMember -Identity $TeacherName
 $TestMoodleTeachers = Get-ADGroupMember -Identity $MoodleName
+$TestMoodlePlaypen = Get-ADGroupMember -Identity $MoodlePlaypen
 $TestMapTeachers = Get-ADGroupMember -Identity $TeacherMapName
 #Year Levels From teaching class lists
 $teaches5 = Get-ADGroupMember -Identity $Teach5Name
@@ -156,7 +158,7 @@ if (!(Test-Path ".\log")) {
 }
 
 # set log file
-$LogFile = “.\log\staff-${LogDate}.log”
+$LogFile = ".\log\staff-${LogDate}.log"
 #Write-output "" | Out-File $LogFile -Append
 #Get-Date | Out-File $LogFile -Append
 $LogContents = @()
@@ -303,22 +305,54 @@ ${FullName}
 ${LoginName}
 ${Position}"
 
+        $errorbody = "Incomplete Staff Data
+
+LoginName = ${LoginName}
+PreferredName = ${PreferredName}
+Surname = ${Surname}
+FullName = ${FullName}
+UserPrincipalName = ${UserPrincipalName}
+
+Please check this out ASAP"
+
         ######################################
         ### Create / Modify Staff Accounts ###
         ######################################
 
         # create basic user if you can't find one
         If (!(Get-ADUser -Filter { SamAccountName -eq $LoginName })) {
-            
+            #check values from data
+            If ((!($LoginName)) -or (!($FullName)) -or (!($PreferredName)) -or (!($Surname)) -or ($UserPrincipalName -eq "@vnc.qld.edu.au")) {
+                write-host "Error in data for ${LoginName}"
+                # log it
+                $LogContents += "Incomplete Data!"
+                $LogContents += ""
+                $LogContents += "LoginName = ${LoginName}"
+                $LogContents += "PreferredName = ${PreferredName}"
+                $LogContents += "Surname = ${Surname}"
+                $LogContents += "FullName = ${FullName}"
+                $LogContents += "UserPrincipalName = ${UserPrincipalName}"
+                $LogContents += ""
+                $LogContents += "Please check this out ASAP"
+                # mail it
+                Send-MailMessage -From $fromnotification -Subject "User Data Error" -To $tonotification -Body $errorbody -SmtpServer $smtpserver
+            }
+            # create user when not found
             Try {
                 New-ADUser -SamAccountName $LoginName -Name $FullName -AccountPassword $userpass -Enabled $true -Path $UserPath -DisplayName $FullName -GivenName $PreferredName -Surname $Surname -UserPrincipalName $UserPrincipalName -ChangePasswordAtLogon $True
                 # removing # -homedrive "H" -homedirectory $HomeDrive
-                Set-ADUser -Identity $LoginName -Description $Position -Office $Position -Title $Position
                 $LogContents += "New User ${LoginName} created for ${FullName}"
                 Send-MailMessage -From $fromnotification -Subject "${emailsubject} ${LoginName}" -To $tonotification -Body $emailbody -SmtpServer $smtpserver
             }
             Catch {
                 $LogContents += "${LoginName} already exists for ${FullName}"
+            }
+            # try to set basic position info
+            Try {
+                Set-ADUser -Identity $LoginName -Description $Position -Office $Position -Title $Position
+            }
+            Catch {
+                $LogContents += "${LoginName} couldn't set position for ${FullName}"
             }
         }
 
@@ -370,17 +404,17 @@ ${Position}"
             If (($TestEmail) -and (!($TestEmail -ceq $TestPrincipal))) {
                 Set-ADUser -Identity $TestDN -UserPrincipalName $TestEmail
                 #Write-Output "UPN CHANGE: ${TestPrincipal} to ${TestEmail}" | Out-File $LogFile -Append
-                $LogContents += "UPN CHANGE: ${TestPrincipal} to ${TestEmail}"
+                $LogContents += "${TestAccountName} Changed UPN to: ${TestEmail}"
             }
 
             # Check Name Information
             If ($TestGiven -cne $PreferredName) {
                 Set-ADUser -Identity $LoginName -GivenName $PreferredName
-                write-host "${TestAccountName} Changed Given Name to ${PreferredName}"
+                write-host "${TestAccountName} Changed Given Name to: ${PreferredName}"
             }
             If ($TestSurname -cne $Surname) {
                 Set-ADUser -Identity $LoginName -Surname $Surname
-                write-host "${TestAccountName} Changed Surname to ${SurName}"
+                write-host "${TestAccountName} Changed Surname to: ${SurName}"
             }
             If (($TestName -cne $FullName)) {
                 Rename-ADObject -Identity $TestDN -NewName $FullName
@@ -404,7 +438,7 @@ ${Position}"
             # Set userprofile path if is doesn't match
             If (!($TestHome -eq $HomeDrive)) {
                 Set-ADUser -Identity $LoginName -homedrive "H:" -homedirectory $HomeDrive
-                write-host "updated ${TestAccountName} home profile directory to: ${HomeDrive}"
+                write-host "${TestAccountName} Changed homedirectory to: ${HomeDrive}"
             }
 
             # create home folder if it doesn't exist
@@ -415,33 +449,28 @@ ${Position}"
             # Add Position if there is one
             if (!($Position -ceq $TestDescription) -and (!($Position.length -eq 0))) {
                 Set-ADUser -Identity $LoginName -Description $Position
-                write-host $TestAccountName, "setting position"
-                write-host "-${Position}-"
-                write-host "-${TestDescription}-"
+                write-host $TestAccountName, "Changed position to:", $Position
                 write-host
             }
 
             # Add Office title
             if (!("Villanova College" -ceq $TestOffice)) {
                 Set-ADUser -Identity $LoginName -Office "Villanova College"
-                write-host $TestAccountName, "setting Office"
-                write-host "-${Position}-"
-                write-host "-${TestDescription}-"
+                write-host $TestAccountName, "Changed Office to: Villanova College"
                 write-host
             }
 
             # Add title
             If (!($Position -ceq $TestTitle) -and (!($Position.length -eq 0))) {
                 Set-ADUser -Identity $LoginName -Title $Position
-                write-host $TestUser.Name, "Missing Title"
-                write-host $Position
+                write-host $TestUser.Name, "Changed Title to:", $Position
                 write-host
             }
             
             # Set Department to identify current staff
             If (!(($TestUser.Department) -ceq ("Staff"))) {
                 Set-ADUser -Identity $LoginName -Department "Staff"
-                write-host $TestUser.Name, "Setting Position:", $TestUser.Department
+                write-host $TestUser.Name, "Changed Position to:", $TestUser.Department
                 write-host
             }
 
@@ -450,13 +479,13 @@ ${Position}"
                 If ($Telephone -eq $null) {
                     if ($TestPhone -ne "690") {
                         Set-ADUser -Identity $LoginName -OfficePhone "690"
-                        write-host $TestAccountName, "setting Telephone to Default (690)"
+                        write-host $TestAccountName, "Changed Telephone to: Default (690)"
                         write-host
                     }
                 }
                 Else {
                     Set-ADUser -Identity $LoginName -OfficePhone $Telephone
-                    write-host $TestAccountName, "setting Telephone to:", $Telephone
+                    write-host $TestAccountName, "Changed Telephone to:", $Telephone
                     write-host
                 }
             }
@@ -572,7 +601,7 @@ ${Position}"
                         if (!($TestNumber -ceq $tmpNum) -and (!($tmpNum.length -eq 0))) {
                             Set-ADUser -Identity $LoginName -EmployeeNumber $tmpNum
                             write-host "Setting Hex employeeNumber (${tmpNum}) for ${TestAccountName}"
-                            $LogContents += "Setting Hex employeeNumber (${tmpID}) for ${LoginName}"
+                            $LogContents += "Setting Hex employeeNumber (${tmpNum}) for ${LoginName}"
                         }
                     }
                 }
@@ -631,6 +660,11 @@ ${Position}"
                 if (!($TestMapTeachers.name.contains($TestUser.name))) {
                     Add-ADGroupMember -Identity $TeacherMapName -Member $TestAccountName
                     write-host $TestAccountName "ADDED to Map-Teachers Group"
+                }
+                # $TestMoodlePlaypen
+                if (!($TestMoodlePlaypen.name.contains($TestUser.name))) {
+                    Add-ADGroupMember -Identity $MoodlePlaypen -Member $TestAccountName
+                    write-host $TestAccountName "ADDED to MoodlePlaypen Group"
                 }
 
                 # Year year level teacher groups
@@ -986,9 +1020,7 @@ ${Position}"
             # Don't disable users we want to keep
             If ($TestDescription -eq "keep") {
                 #write-output "${LoginName} Keeping terminated user" | Out-File $LogFile -Append
-                if ((!($LoginName = 'obrij')) -or (!($LoginName = 'latei'))) {
-                    $LogContents += "${LoginName} Keeping terminated user"
-                }
+                $LogContents += "${LoginName} Keeping terminated user"
             }
             # Terminate Staff AFTER their Termination date
             ElseIf ($DATE -gt $Termination) {
@@ -1005,29 +1037,43 @@ ${Position}"
                 }
             }
         }
-        Else {
-            # Enforce Group and OU changes for disabled staff
-            If ($TestUser) {
-                # Move to disabled user OU if not already there
-                if (!($TestUser.distinguishedname.Contains($DisablePath))) {
-                    Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
-                    #write-output "Moving: ${TestAccountName} to Disabled Staff OU" | Out-File $LogFile -Append
-                    $LogContents += "Moving: ${TestAccountName} to Disabled Staff OU"
+        ElseIf ($TestUser) {
+            # Move to disabled user OU if not already there
+            if (!($TestUser.distinguishedname.Contains($DisablePath))) {
+                Get-ADUser $TestAccountName | Move-ADObject -TargetPath $DisablePath
+                #write-output "Moving: ${TestAccountName} to Disabled Staff OU" | Out-File $LogFile -Append
+                $LogContents += "Moving: ${TestAccountName} to Disabled Staff OU"
+            }
+            else {
+                # Set Department to "Disabled" to help identify current staff
+                If (!(($TestDepartment) -ceq ("Disabled"))) {
+                    Set-ADUser -Identity $LoginName -Department "Disabled"
+                    write-host "${LoginName} Setting Position from ${TestDepartment} to Disabled"
                 }
+                # Set Company to "Disabled" to help identify current staff
+                if (!($TestCompany -ceq "Disabled")) {
+                    Set-ADUser -Identity $LoginName -Company "Disabled"
+                    write-host "${LoginName} set company to Disabled"
+                }
+                # Set Title to "Disabled" to help identify current staff
+                If (!($TestTitle -ceq "Disabled")) {
+                    Set-ADUser -Identity $LoginName -Title "Disabled"
+                    write-host "${LoginName} Title change to: Disabled"
+                }
+            }
 
-                # Remove groups if they are a member of any additional groups
-                If ($TestMembership) {
-                    write-host "Removing groups for ${TestAccountName}"
-                    write-host
-                    #remove All Villanova Groups
-                    Foreach($GroupName In $VillanovaGroups) {
-                        Try {
-                            Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
-                        }
-                        Catch {
-                            #Write-output "Error Removing ${TestAccountName} from ${GroupName}" | Out-File $LogFile -Append
-                            $LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
-                        }
+            # Remove groups if they are a member of any additional groups
+            If ($TestMembership) {
+                write-host "Removing groups for ${TestAccountName}"
+                write-host
+                #remove All Villanova Groups
+                Foreach($GroupName In $VillanovaGroups) {
+                    Try {
+                        Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
+                    }
+                    Catch {
+                        #Write-output "Error Removing ${TestAccountName} from ${GroupName}" | Out-File $LogFile -Append
+                        $LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
                     }
                 }
             }
