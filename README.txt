@@ -2,6 +2,12 @@
 FimTassTic: Automatic User Management using CSV data from TASS.web
 ------------------------------------------------------------------
 
+v2016.2
+-------
+ * Add staff to 365 (no mailbox)
+ * Add import checks to avoid reimporting the same modules
+ * cleanup windows and unicode characters
+
 v2016.1
 -------
  * Add email notification on account creation

@@ -260,6 +260,8 @@ foreach($line in $input) {
         $Position = $Position -replace " And ", " and "
         $Position = $Position -replace " Le Program Leader", " LE Program Leader"
         $Position = $Position -replace "Av Technical Coordinator", "AV Technical Coordinator"
+        $Position = $Position -replace "Director of Music", "Director of Music / Artistic Director QCMF"
+        $Position = $Position -replace "Music Department Assistant", "Villanova Music Department / QCMF Facilitator"
         $Surname = $Surname -replace "D'a", "D'A"
         $Surname = $Surname -replace "De L", "de L"
         $Surname = $Surname -replace "De S", "de S"
