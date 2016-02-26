@@ -24,7 +24,7 @@
 
 import-module activedirectory
 
-if (Get-Command Get-Mailbox) {
+If (Get-Command Get-Mailbox) {
     #write-host "Exchange is imported"
 }
 Else {
@@ -33,9 +33,9 @@ Else {
 }
 
 # Input CSV's
-$input = Import-CSV  .\csv\fim_staffALL.csv -Encoding UTF8
-$StudentInput = Import-CSV .\csv\fim_student_filtered.csv -Encoding UTF8
-$enrolledinput = Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
+$input = Import-CSV  "C:\DATA\csv\fim_staffALL.csv" -Encoding UTF8
+$StudentInput = Import-CSV "C:\DATA\csv\fim_student_filtered.csv" -Encoding UTF8
+$enrolledinput = Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
 
 $userdomain = "VILLANOVA"
 
@@ -66,12 +66,12 @@ write-host
 #############################################
 
 # check log path
-if (!(Test-Path ".\log")) {
-    mkdir ".\log"
+If (!(Test-Path "C:\DATA\log")) {
+    mkdir "C:\DATA\log"
 }
 
 # set log file
-$LogFile = ".\log\Email-Creation-${LogDate}.log"
+$LogFile = "C:\DATA\log\Email-Creation-${LogDate}.log"
 $LogContents = @()
 
 foreach($line in $input) {
@@ -91,13 +91,13 @@ foreach($line in $input) {
     If ($Termination.length -eq 0) {
         If ($TestUser) {
             # Enable mailbox for user If mail address is missing
-            if (!($TestUser.mail)) {
+            If (!($TestUser.mail)) {
                 Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}"  -Database All-Staff -AddressBookPolicy "Staff Address Policy"
                 Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
                 $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
             }
             #Enable Archive mailbox for user if missing
-            if (!($TestUser.msExchArchiveDatabaseLink)) {
+            If (!($TestUser.msExchArchiveDatabaseLink)) {
                 Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Archive  -ArchiveDatabase Archive-Staff
                 $LogContents += "Created archive mailbox for ${LoginName}" #| Out-File $LogFile -Append
 
@@ -119,7 +119,7 @@ foreach($line in $input) {
         ElseIf ($DATE -gt $Termination) {
             If ($TestUser) {
                 # Disable mailbox for users that have a mail address
-                if ($TestUser.mail) {
+                If ($TestUser.mail) {
                     #Disable-Mailbox -Identity $TestUser.name -Confirm:$false
                     Disable-Mailbox -Identity "${userdomain}\${LoginName}" -Confirm:$false
                     $LogContents += "Disabled mailbox for ${LoginName}" #| Out-File $LogFile -Append
@@ -159,7 +159,7 @@ write-host
 #    If ($Termination.length -eq 0) {
 #        If ($TestUser) {
 #            # Enable mailbox for user If mail address is missing
-#            if (!($TestUser.mail)) {
+#            If (!($TestUser.mail)) {
 #                Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}" -Database All-Student -AddressBookPolicy "Student Address Policy"
 #                Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 5
 #                $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
@@ -178,7 +178,7 @@ write-host
 #        ElseIf ($DATE -gt $Termination) {
 #            If ($TestUser) {
 #                # Disable mailbox for users that have a mail address
-#                if ($TestUser.mail) {
+#                If ($TestUser.mail) {
 #                    Disable-Mailbox -Identity "${userdomain}\${LoginName}" -Confirm:$false
 #                    $LogContents += "Disabled mailbox for ${LoginName}" #| Out-File $LogFile -Append
 #                }
@@ -213,7 +213,7 @@ write-host
 #    ### Process Current Users ###
 #    If (($TestUser) -and ($TestEnabled)) {
 #        # Enable mailbox for user If mail address is missing
-#        if (!($TestMail)) {
+#        If (!($TestMail)) {
 #            Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}" -Database All-Student -AddressBookPolicy "Student Address Policy"
 #            Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 5
 #            $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append

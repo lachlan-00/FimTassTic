@@ -26,7 +26,7 @@
 import-module activedirectory
 
 ### On Premise Exchange
-if (Get-Command Get-Mailbox) {
+If (Get-Command Get-Mailbox) {
     #write-host "Exchange is imported"
 }
 Else {
@@ -38,7 +38,7 @@ Else {
 ###
 ### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
 ###
-if (Get-Command Add-RecipientPermission) {
+If (Get-Command Add-RecipientPermission) {
     #write-host "365 is imported"
 }
 Else {
@@ -51,12 +51,12 @@ Else {
 }
 
 ### Input CSV's
-$input = Import-CSV ".\csv\fim_staffALL.csv" -Encoding UTF8
-$inputcount = (Import-CSV ".\csv\fim_staffALL.csv" -Encoding UTF8 | Measure-Object).Count
-$StudentInput = Import-CSV ".\csv\fim_student.csv" -Encoding UTF8
-$StudentInputcount = (Import-CSV ".\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
-$enrolledinput = Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
-$enrolledinputtcount = (Import-CSV ".\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
+$input = Import-CSV "C:\DATA\csv\fim_staffALL.csv" -Encoding UTF8
+$inputcount = (Import-CSV "C:\DATA\csv\fim_staffALL.csv" -Encoding UTF8 | Measure-Object).Count
+$StudentInput = Import-CSV "C:\DATA\csv\fim_student.csv" -Encoding UTF8
+$StudentInputcount = (Import-CSV "C:\DATA\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
+$enrolledinput = Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
+$enrolledinputtcount = (Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
 
 $userdomain = "VILLANOVA"
 
@@ -80,12 +80,12 @@ $FULLDATE = "${DATE} 00:00:00"
 $LogDate = "${YEAR}-${MONTH}-${DAY}"
 
 # check log path
-if (!(Test-Path ".\log")) {
-    mkdir ".\log"
+If (!(Test-Path "C:\DATA\log")) {
+    mkdir "C:\DATA\log"
 }
 
 # set log file
-$LogFile = ".\log\Email-Creation-${LogDate}.log"
+$LogFile = "C:\DATA\log\Email-Creation-${LogDate}.log"
 $LogContents = @()
 
 #####################################
@@ -109,7 +109,7 @@ $lastprogress = $NULL
 
 foreach($line in $Input) {
     $progress = ((($tmpcount / $Inputcount) * 100) -as [int]) -as [string]
-    if (((((($tmpcount / $Inputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
+    If (((((($tmpcount / $Inputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
         Write-Host "Progress: ${progress}%"
     }
     $tmpcount = $tmpcount + 1
@@ -160,7 +160,7 @@ $lastprogress = $NULL
 
 foreach($line in $StudentInput) {
     $progress = ((($tmpcount / $StudentInputcount) * 100) -as [int]) -as [string]
-    if (((((($tmpcount / $StudentInputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
+    If (((((($tmpcount / $StudentInputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
         Write-Host "Progress: ${progress}%"
     }
     $tmpcount = $tmpcount + 1
@@ -224,7 +224,7 @@ $lastprogress = $NULL
 
 foreach($line in $enrolledinput) {
     $progress = ((($tmpcount / $enrolledinputcount) * 100) -as [int]) -as [string]
-    if (((((($tmpcount / $enrolledinputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
+    If (((((($tmpcount / $enrolledinputcount) * 100) -as [int]) / 10) -is [int]) -and (!(($progress) -eq ($lastprogress)))) {
         Write-Host "Progress: ${progress}%"
     }
     $tmpcount = $tmpcount + 1
