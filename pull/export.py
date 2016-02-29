@@ -1,6 +1,6 @@
 import pyodbc, csv
 
-connect_string = 'DRIVER={SQL Server};SERVER=TASS;DATABASE=tass;UID=excel;PWD=excel'
+connect_string = 'DRIVER={SQL Server};SERVER=%CHANGE%;DATABASE=%CHANGE%;UID=%CHANGE%;PWD=%CHANGE%'
 
 def get_columns(tblName, cnxn):
     cursor = cnxn.cursor()
