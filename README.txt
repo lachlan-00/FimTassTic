@@ -7,6 +7,8 @@ v2016.2
  * Add staff to 365 (no mailbox)
  * Add import checks to avoid reimporting the same modules
  * cleanup windows and unicode characters
+ * Randomly generate staff passwords
+ * Expand email notification body upon staff creation
 
 v2016.1
 -------
@@ -45,6 +47,8 @@ I have included the python scripts I use to pull our data from the employee/stud
 Requires
 --------
  * pyodbc (If you use the pull scripts)
+ * Office365 & Active directory accounts depending on what you want to achieve
+ * Python2 (Untested Python3, i'm unsire if pyodbc supports 3 yet.)
 
 
 Links

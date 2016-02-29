@@ -35,7 +35,8 @@ $classCount = (Import-CSV "C:\DATA\csv\fim_classes.csv").count
 ### Get Default Password From Secure String File
 ### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
 ###
-$userpass = cat "C:\DATA\DefaultPassword.txt" | convertto-securestring
+### REPLACED WITH RANDOM GENERATED PASSWORD ###
+###$userpass = cat "C:\DATA\DefaultPassword.txt" | convertto-securestring
 
 
 write-host
