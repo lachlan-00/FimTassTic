@@ -10,4 +10,5 @@ C:\Python27\python.exe C:\DATA\export.py fim_MoodleUsersCombined
 C:\Python27\python.exe C:\DATA\export.py fim_MoodleGroups
 C:\Python27\python.exe C:\DATA\export.py library_staff
 C:\Python27\python.exe C:\DATA\export.py library_student
+C:\Python27\python.exe C:\DATA\export.py fim_parent
 C:\Python27\python.exe C:\DATA\export.py fim_enrolled_students-ALL
