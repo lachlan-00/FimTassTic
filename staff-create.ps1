@@ -586,11 +586,11 @@ Please check this out ASAP"
             }
 
             # Check Group Membership
-            If (!($TestStaff.name.contains($TestUser.name))) {
+            If (!($TestStaff.SamAccountName.contains($LoginName))) {
                         Add-ADGroupMember -Identity "Staff" -Member $TestAccountName
                         write-host $TestAccountName "added Staff"
             }
-            If (!($TestPrintGroup.name.contains($TestUser.name))) {
+            If (!($TestPrintGroup.SamAccountName.contains($LoginName))) {
                         Add-ADGroupMember -Identity $GenericPrintCode -Member $TestAccountName
                         write-host $TestAccountName "added default printer group ${GenericPrintCode}"
             }
@@ -676,20 +676,20 @@ Please check this out ASAP"
                     }
                 }
                 # Check Group Membership
-                If (!($TestTeachers.name.contains($TestUser.name))) {
+                If (!($TestTeachers.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $TeacherName -Member $TestAccountName
                     write-host $TestAccountName "ADDED to Teachers Group"
                 }
-                If (!($TestMoodleTeachers.name.contains($TestUser.name))) {
+                If (!($TestMoodleTeachers.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $MoodleName -Member $TestAccountName
                     write-host $TestAccountName "ADDED to MoodleTeachers Group"
                 }
-                If (!($TestMapTeachers.name.contains($TestUser.name))) {
+                If (!($TestMapTeachers.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $TeacherMapName -Member $TestAccountName
                     write-host $TestAccountName "ADDED to Map-Teachers Group"
                 }
                 # $TestMoodlePlaypen
-                If (!($TestMoodlePlaypen.name.contains($TestUser.name))) {
+                If (!($TestMoodlePlaypen.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $MoodlePlaypen -Member $TestAccountName
                     write-host $TestAccountName "ADDED to MoodlePlaypen Group"
                 }
