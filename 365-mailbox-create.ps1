@@ -26,7 +26,7 @@
 import-module activedirectory
 
 ### On Premise Exchange
-If (Get-Command Get-Mailbox) {
+If (Get-Command Get-Mailbox -ErrorAction SilentlyContinue) {
     #write-host "Exchange is imported"
 }
 Else {
@@ -38,7 +38,7 @@ Else {
 ###
 ### http://www.adminarsenal.com/admin-arsenal-blog/secure-password-with-powershell-encrypting-credentials-part-1/
 ###
-If (Get-Command Add-RecipientPermission) {
+If (Get-Command Add-RecipientPermission -ErrorAction SilentlyContinue) {
     #write-host "365 is imported"
 }
 Else {
@@ -57,6 +57,10 @@ $StudentInput = Import-CSV "C:\DATA\csv\fim_student.csv" -Encoding UTF8
 $StudentInputcount = (Import-CSV "C:\DATA\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
 $enrolledinput = Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
 $enrolledinputtcount = (Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
+
+# Deny Access group is used to remove problem students from important services
+$DenyAccessGroup = "CN=S-G_Deny-Access,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$DenyAccessGroupMembers = Get-ADGroupMember -Identity $DenyAccessGroup
 
 $userdomain = "VILLANOVA"
 
@@ -129,21 +133,30 @@ foreach($line in $Input) {
 
     ### Process Current Users ###
     If ($Termination.length -eq 0) {
-        If (($TestUser) -and ($SchoolEmail)) {
+        # get location and check for existing license
+        $testusagelocation = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).UsageLocation
+        $test365license = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).isLicensed
+        $testblock = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).BlockCredential
 
-            # get location and check for existing license
-            $testusagelocation = (Get-MsolUser -UserPrincipalName $SchoolEmail).UsageLocation
-            $test365license = (Get-MsolUser -UserPrincipalName $SchoolEmail).isLicensed
+        If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
+            # User is denied from accessing their account
+            If (!($testblock)) {
+                write-host "blocking user account"
+                Set-MsolUser -UserPrincipalName $SchoolEmail -BlockCredential $true
+            }
+        }
+        ElseIf (($TestUser) -and ($SchoolEmail)) {
 
             # Only Add licenses when users have a location set to AU
             If (!($test365license) -and ($testusagelocation -ceq "AU")) {
                 write-host "Missing 365 License for ${LoginName}... Adding."
-                Get-MsolUser -UserPrincipalName $SchoolEmail| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                Get-MsolUser -UserPrincipalName $SchoolEmail| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:AAD_PREMIUM"
                 $LogContents += "Added Faculty 365 License for: ${LoginName}" #| Out-File $LogFile -Append
             }
-            #If ($test365license) {
-            #    write-host "365 already licensed for ${LoginName}"
-            #}
+            If ($testblock) {
+                write-host "unblocking user account"
+                Set-MsolUser -UserPrincipalName $SchoolEmail -BlockCredential $false
+            }
         }
     }
 }
@@ -176,10 +189,23 @@ foreach($line in $StudentInput) {
     $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
     $TestEnabled = $TestUser.Enabled
     $TestDescription = $TestUser.Description
+    $SchoolEmail = $TestUser.UserPrincipalName
 
     ### Process Current Users ###
     If ($Termination.length -eq 0) {
-        If ($TestUser) {
+        # get location and check for existing license
+        $testusagelocation = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).UsageLocation
+        $test365license = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).isLicensed
+        $testblock = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).BlockCredential
+
+        If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
+            # User is denied from accessing their account
+            If (!($testblock)) {
+                write-host "blocking user account"
+                Set-MsolUser -UserPrincipalName $SchoolEmail -BlockCredential $true
+            }
+        }
+        ElseIf ($TestUser) {
             # Check for 365 mail account
             Try {
                 $testmailenabled = Get-RemoteMailbox -Identity $LoginName
@@ -205,8 +231,9 @@ foreach($line in $StudentInput) {
                 Enable-RemoteMailbox ${LoginName} -alias ${LoginName} -RemoteRoutingAddress "${LoginName}@VNC4.mail.onmicrosoft.com"
                 $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
             }
-            If ($test365license) {
-                #write-host "365 already licensed for ${LoginName}"
+            If ($testblock) {
+                write-host "unblocking user account"
+                Set-MsolUser -UserPrincipalName $SchoolEmail -BlockCredential $false
             }
         }
     }
