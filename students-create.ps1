@@ -368,7 +368,9 @@ This is an automated email.
                     If (!(($GroupName -eq $MoodleTechHelp) -or ($GroupName -eq $DenyAccessGroup) -or ($GroupName -eq $DomainUsersGroup))) {
                         Try {
                             Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
-                            $RemovalCheck = $true
+                            If ($GroupName -eq $StudentName) {
+                                $RemovalCheck = $true
+                            }
                         }
                         Catch {
                         $LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
@@ -544,65 +546,56 @@ This is an automated email.
             # Confirm membership to Year 5
             If (($YearGroup -eq "5") -and (!($5Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $5Name -Member $LoginName
-                    write-host "${LoginName} added 5"
             }
-            Else {
+            Elseif (!($YearGroup -eq "5")) {
                 Remove-ADGroupMember -Identity $5Name -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 6
             If (($YearGroup -eq "6") -and (!($6Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $6Name -Member $LoginName
-                    write-host "${LoginName} added 6"
-            }
-            Else {
+            Elseif (!($YearGroup -eq "6")) {
                 Remove-ADGroupMember -Identity $6Name -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 7
             If (($YearGroup -eq "7") -and (!($7Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $7Name -Member $LoginName
-                    write-host "${LoginName} added 7"
             }
-            Else {
+            Elseif (!($YearGroup -eq "7")) {
                 Remove-ADGroupMember -Identity $7Name -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 8
             If (($YearGroup -eq "8") -and (!($8Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $8Name -Member $LoginName
-                    write-host "${LoginName} added 8"
             }
-            Else {
+            Elseif (!($YearGroup -eq "8")) {
                 Remove-ADGroupMember -Identity $8Name -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 9
             If (($YearGroup -eq "9") -and (!($9Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $9Name -Member $LoginName
-                    write-host "${LoginName} added 9"
             }
-            Else {
+            Elseif (!($YearGroup -eq "9")) {
                 Remove-ADGroupMember -Identity $9Name -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 10
             If (($YearGroup -eq "10") -and (!($10Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $10Name -Member $LoginName
-                    write-host "${LoginName} added 10"
             }
-            Else {
+            Elseif (!($YearGroup -eq "10")) {
                 Remove-ADGroupMember -Identity $10Name -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 11
             If (($YearGroup -eq "11") -and (!($11Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $11Name -Member $LoginName
-                    write-host "${LoginName} added 1"
             }
-            Else {
+            Elseif (!($YearGroup -eq "11")) {
                 Remove-ADGroupMember -Identity $11Name -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 12
             If (($YearGroup -eq "12") -and (!($12Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $12Name -Member $LoginName
-                    write-host "${LoginName} added 12"
             }
-            Else {
+            Elseif (!($YearGroup -eq "12")) {
                 Remove-ADGroupMember -Identity $12Name -Member $LoginName -Confirm:$false
             }
         }
