@@ -70,6 +70,7 @@ $MoodleTechHelp = "CN=tech-help-students,OU=student,OU=ClassEnrolment,OU=moodle,
 
 # Deny Access group is used to remove problem students from important services
 $DenyAccessGroup = "CN=S-G-Deny-Access,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$DomainUsersGroup = "CN=Domain Users,CN=Users,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 
 # Get Date and Format Field to Match Termination Date
 $YEAR = [string](Get-Date).Year
@@ -88,6 +89,7 @@ $LogDate = "${YEAR}-${MONTH}-${DAY}"
 #EMAIL SETTINGS
 # specify who gets notified 
 $tonotification = "it@vnc.qld.edu.au"
+$ccnotification = "jlane@vnc.qld.edu.au"
 # specify where the notifications come from 
 $fromnotification = "notifications@vnc.qld.edu.au"
 # specify the SMTP server 
@@ -268,7 +270,20 @@ foreach($line in $input) {
         $Position = "Year ${YearGroup}"
         $HomeDrive = $null
         $JobTitle = "Student - ${YEAR}"
-        
+
+        # Deny Access email body
+        $DenyBody = "The User ${LoginName}/${FullName} has been removed from Villanova Groups due to acceptable use policy violations.
+
+This affects access to Villanova services such as:
+ * Network File Access
+ * Villanova Website Access (Excluding Moodle's Tech Help page)
+ * Villanova WiFi Access (BYOD & Student)
+ * Villanova Google Account
+
+###########################
+This is an automated email.
+###########################"
+        # New User email body
         $emailbody = "There has been a new AD user created on the network.
 
 Full Name: ${FullName}
@@ -335,26 +350,45 @@ This is an automated email.
         }
         $TestPrincipal = $TestUser.UserPrincipalName
 
-        # Remove groups if they are a member of any additional groups
+
+        # Remove User from groups if they are a member of Deny Access
         If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
+            $RemovalCheck = $False
             If ($TestMembership) {
-                write-host "Removing groups for ${TestAccountName}"
-                write-host
-                #remove All Villanova  Groups
+                # Remove All Villanova  Groups
                 Foreach($GroupName In $TestMembership) {
-                    write-host $GroupName
-                    #Try {
-                    #    Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
-                    #}
-                    #Catch {
-                    #$LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
-                    #}
+                    If (!(($GroupName -eq $MoodleTechHelp) -or ($GroupName -eq $DenyAccessGroup) -or ($GroupName -eq $DomainUsersGroup))) {
+                        Try {
+                            Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
+                            $RemovalCheck = $true
+                        }
+                        Catch {
+                        $LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
+                        }
+                    }
+                }
+                If ($RemovalCheck) {
+                    $LogContents += $DenyBody
+                    Send-MailMessage -From $fromnotification -Subject "DENY ACCESS ${LoginName}" -To $tonotification -Cc $ccnotification -Body $DenyBody -SmtpServer $smtpserver
+                }
+                # Change Details to block WiFi and email groups
+                If (!(($TestDepartment) -ceq ("DENYACCESS"))) {
+                    Set-ADUser -Identity $LoginName -Department "DENYACCESS"
+                    write-host "${LoginName} Setting Position from ${TestDepartment} to DENYACCESS"
+                }
+                If (!($TestCompany -ceq "DENYACCESS")) {
+                    Set-ADUser -Identity $LoginName -Company "DENYACCESS"
+                    write-host "${LoginName} set company to DENYACCESS"
+                }
+                If (!($TestTitle -ceq "DENYACCESS")) {
+                    Set-ADUser -Identity $LoginName -Title "DENYACCESS"
+                    write-host "${LoginName} Title change to: DENYACCESS"
                 }
             }
         }
 
         # set additional user details if the user exists
-        If ($TestUser) {
+        ElseIf ($TestUser) {
 
             # Check that UPN is set to email. but only if an email exists
             If (($TestEmail) -and (!($TestEmail -ceq $TestPrincipal))) {
@@ -397,85 +431,85 @@ This is an automated email.
             # Check Name Information
             If ($TestGiven -cne $PreferredName) {
                 Set-ADUser -Identity $LoginName -GivenName $PreferredName
-                write-host "${TestAccountName} Changed Given Name to ${PreferredName}"
+                write-host "${LoginName}: ${TestAccountName} Changed Given Name to ${PreferredName}"
             }
             If ($TestSurname -cne $Surname) {
                 Set-ADUser -Identity $LoginName -Surname $Surname
-                write-host "${TestAccountName} Changed Surname to ${SurName}"
+                write-host "${LoginName}: ${TestAccountName} Changed Surname to ${SurName}"
             }
             If (($TestName -cne $FullName) -and ($TestName -cne $AltFullName)) {
                 Try {
                     Rename-ADObject -Identity $TestDN -NewName $FullName
-                    write-host "${TestAccountName} Changed Object Name to: ${FullName}"
+                    write-host "${LoginName}: ${TestAccountName} Changed Object Name to: ${FullName}"
                 }
                 Catch {
                     Rename-ADObject -Identity $TestDN -NewName $AltFullName
-                    write-host "${TestAccountName} Changed Object Name to: ${AltFullName}"
+                    write-host "${LoginName}: ${TestAccountName} Changed Object Name to: ${AltFullName}"
                 }
             }
             If (($TestDisplayName -cne $FullName)) {
                 Set-ADUser -Identity $LoginName -DisplayName $FullName
-                write-host "${TestAccountName} Changed Display Name to: ${FullName}"
+                write-host "${LoginName}: ${TestAccountName} Changed Display Name to: ${FullName}"
             }
 
             # Set company for automatic mail group filtering
             If ($UserPath -eq $5Path) {
                 If (!($TestCompany -ceq "year5")) {
                     Set-ADUser -Identity $LoginName -Company "year5"
-                    write-host $TestName "set company to year5"
+                    write-host "${LoginName} set company to year5"
                 }
             }
             If ($UserPath -eq $6Path) {
                 If (!($TestCompany -ceq "year6")) {
                     Set-ADUser -Identity $LoginName -Company "year6"
-                    write-host $TestName "set company to year6"
+                    write-host "${LoginName} set company to year6"
                 }
             }
             If ($UserPath -eq $7Path) {
                 If (!($TestCompany -ceq "year7")) {
                     Set-ADUser -Identity $LoginName -Company "year7"
-                    write-host $TestName "set company to year7"
+                    write-host "${LoginName} set company to year7"
                 }
             }
             If ($UserPath -eq $8Path) {
                 If (!($TestCompany -ceq "year8")) {
                     Set-ADUser -Identity $LoginName -Company "year8"
-                    write-host $TestName "set company to year8"
+                    write-host "${LoginName} set company to year8"
                 }
             }
             If ($UserPath -eq $9Path) {
                 If (!($TestCompany -ceq "year9")) {
                     Set-ADUser -Identity $LoginName -Company "year9"
-                    write-host $TestName "set company to year9"
+                    write-host "${LoginName} set company to year9"
                 }
             }
             If ($UserPath -eq $10Path) {
                 If (!($TestCompany -ceq "year10")) {
                     Set-ADUser -Identity $LoginName -Company "year10"
-                    write-host $TestName "set company to year10"
+                    write-host "${LoginName} set company to year10"
                 }
             }
             If ($UserPath -eq $11Path) {
                 If (!($TestCompany -ceq "year11")) {
                     Set-ADUser -Identity $LoginName -Company "year11"
-                    write-host $TestName "set company to year11"
+                    write-host "${LoginName} set company to year11"
                 }
             }
             If ($UserPath -eq $12Path) {
                 If (!($TestCompany -ceq "year12")) {
                     Set-ADUser -Identity $LoginName -Company "year12"
-                    write-host $TestName "set company to year12"
+                    write-host "${LoginName} set company to year12"
                 }
             }
 
             # Set Year Level and Title
             If (($TestTitle) -eq $null) {
                 Set-ADUser -Identity $LoginName -Title $JobTitle
-                write-host $LoginName, "Title change to: ${JobTitle}"
+                write-host "${LoginName} Title change to: ${JobTitle}"
             }
             ElseIf (!($TestTitle).contains($JobTitle)) {
                 Set-ADUser -Identity $LoginName -Title $JobTitle
-                write-host $LoginName, "Title change to: ${JobTitle}"
+                write-host "${LoginName} Title change to: ${JobTitle}"
             }
 
             # Get the year level of the current office string
@@ -485,60 +519,60 @@ This is an automated email.
             }
             Else {
                 Set-ADUser -Identity $LoginName -Office $Position
-                write-host $LoginName, "Office missing; set to ${Position}"
+                write-host "${LoginName} Office missing; set to ${Position}"
             }
 
             # set Office to current year level
             If ($YearGroup.length -eq 1) {
                 If ($YearGroup -ne $test1) {
                     Set-ADUser -Identity $LoginName -Office $Position
-                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
+                    write-host "${LoginName} year level change from ${TestOffice} to ${Position}"
                 }
                 ElseIf ($TestOffice -eq "Future Year ${YearGroup}") {
                     Set-ADUser -Identity $LoginName -Office $Position
-                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
+                    write-host "${LoginName} year level change from ${TestOffice} to ${Position}"
                 }
             }
             ElseIf ($YearGroup.length -eq 2) {
                 If ($YearGroup -ne $test2) {
                     Set-ADUser -Identity $LoginName -Office $Position
-                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
+                    write-host "${LoginName} year level change from ${TestOffice} to ${Position}"
                 }
                 ElseIf ($TestOffice -eq "Future Year ${YearGroup}") {
                     Set-ADUser -Identity $LoginName -Office $Position
-                    write-host $LoginName, "year level change from ${TestOffice} to ${Position}"
+                    write-host "${LoginName} year level change from ${TestOffice} to ${Position}"
                 }
             }
 
             # Set Department to identify current students
             If (!(($TestDepartment) -ceq ("Student"))) {
                 Set-ADUser -Identity $LoginName -Department "Student"
-                write-host "${TestName} Setting Position from ${TestDepartment} to Student"
+                write-host "${LoginName} Setting Position from ${TestDepartment} to Student"
             }
 
             # Check Group Membership
             If (!($StudentGroup.SamAccountName.contains($LoginName))) {
                 Add-ADGroupMember -Identity "Students" -Member $LoginName
-                write-host $LoginName "added Students Group"
+                write-host "${LoginName} added Students Group"
             }
             If (!($LocalUser.SamAccountName.contains($LoginName))) {
-                write-host $TestName, "Add to local user group for domain workstations"
+                write-host "${LoginName} Add to local user group for domain workstations"
                 Add-ADGroupMember -Identity $UserRegular -Member $LoginName
             }
             # $MoodleStudentMembers
             If (!($MoodleStudentMembers.SamAccountName.contains($LoginName))) {
                 Add-ADGroupMember -Identity $MoodleStudent -Member $LoginName
-                write-host $LoginName "added MoodleStudent Group"
+                write-host "${LoginName} added MoodleStudent Group"
             }
             # $MoodleTechHelpMembers
             If (!($MoodleTechHelpMembers.SamAccountName.contains($LoginName))) {
                 Add-ADGroupMember -Identity $MoodleTechHelp -Member $LoginName
-                write-host $LoginName "added MoodleTechHelp Group"
+                write-host "${LoginName} added MoodleTechHelp Group"
             }
             # $TestPrintGroup
             If (!($TestPrintGroup.name.contains($TestUser.name))) {
                 Add-ADGroupMember -Identity $GenericPrintCode -Member $TestAccountName
-                write-host $TestAccountName "added default printer group ${GenericPrintCode}"
+                write-host "${LoginName} added default printer group ${GenericPrintCode}"
             }
 
             # Remove groups for other grades and add the correct grade
@@ -546,7 +580,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($5Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $5Name -Member $TestAccountName
-                    write-host $LoginName "added 5"
+                    write-host "${LoginName} added 5"
                 }
                 If ($6Group.SamAccountName.contains($LoginName)) {
                     Remove-ADGroupMember -Identity $6Name -Member $TestAccountName -Confirm:$false
@@ -577,7 +611,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($6Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $6Name -Member $TestAccountName
-                    write-host $LoginName "added 6"
+                    write-host "${LoginName} added 6"
                 }
                 If ($7Group.SamAccountName.contains($LoginName)) {
                     Remove-ADGroupMember -Identity $7Name -Member $TestAccountName -Confirm:$false
@@ -608,7 +642,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($7Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $7Name -Member $TestAccountName
-                    write-host $LoginName "added 7"
+                    write-host "${LoginName} added 7"
                 }
                 If ($8Group.SamAccountName.contains($LoginName)) {
                     Remove-ADGroupMember -Identity $8Name -Member $TestAccountName -Confirm:$false
@@ -639,7 +673,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($8Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $8Name -Member $TestAccountName
-                    write-host $LoginName "added 8"
+                    write-host "${LoginName} added 8"
                 }
                 If ($9Group.SamAccountName.contains($LoginName)) {
                     Remove-ADGroupMember -Identity $9Name -Member $TestAccountName -Confirm:$false
@@ -670,7 +704,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($9Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $9Name -Member $TestAccountName
-                    write-host $LoginName "added 9"
+                    write-host "${LoginName} added 9"
                 }
                 If ($10Group.SamAccountName.contains($LoginName)) {
                     Remove-ADGroupMember -Identity $10Name -Member $TestAccountName -Confirm:$false
@@ -701,7 +735,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($10Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $10Name -Member $TestAccountName
-                    write-host $LoginName "added 10"
+                    write-host "${LoginName} added 10"
                 }
                 If ($11Group.SamAccountName.contains($LoginName)) {
                     Remove-ADGroupMember -Identity $11Name -Member $TestAccountName -Confirm:$false
@@ -732,7 +766,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($11Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $11Name -Member $TestAccountName
-                    write-host $LoginName "added 11"
+                    write-host "${LoginName} added 11"
                 }
                 If ($12Group.SamAccountName.contains($LoginName)) {
                     Remove-ADGroupMember -Identity $12Name -Member $TestAccountName -Confirm:$false
@@ -763,7 +797,7 @@ This is an automated email.
                 # Add Correct Year Level
                 If (!($12Group.SamAccountName.contains($LoginName))) {
                     Add-ADGroupMember -Identity $12Name -Member $TestAccountName
-                    write-host $LoginName "added 12"
+                    write-host "${LoginName} added 12"
                 }
             }
         }
@@ -868,11 +902,14 @@ This is an automated email.
                 write-host
                 #remove All Villanova  Groups
                 Foreach($GroupName In $TestMembership) {
-                    Try {
-                        Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
-                    }
-                    Catch {
-                        $LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
+                    # Remove all groups leaving domain users only
+                    If (!($GroupName -eq $DomainUsersGroup)) {
+                        Try {
+                            Remove-ADGroupMember -Identity $GroupName -Member $TestAccountName -Confirm:$false
+                        }
+                        Catch {
+                            $LogContents += "Error Removing ${TestAccountName} from ${GroupName}"
+                        }
                     }
                 }
             }
