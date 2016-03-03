@@ -62,6 +62,15 @@ $9Name = "CN=S-G_year9,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=e
 $10Name = "CN=S-G_year10,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $11Name = "CN=S-G_year11,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $12Name = "CN=S-G_year12,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$Studmail = "CN=Students - All,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$5mail = "CN=Students - Year 5,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$6mail = "CN=Students - Year 6,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$7mail = "CN=Students - Year 7,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$8mail = "CN=Students - Year 8,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$9mail = "CN=Students - Year 9,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$10mail = "CN=Students - Year 10,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$11mail = "CN=Students - Year 11,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
+$12mail = "CN=Students - Year 12,OU=distribution,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $UserAdmin = "CN=Local-Users-Administrators,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $UserPower = "CN=Local-Users-Power_Users,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
 $UserRegular = "CN=Local-Users-Users,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
@@ -113,6 +122,15 @@ $9Group = Get-ADGroupMember -Identity $9Name
 $10Group = Get-ADGroupMember -Identity $10Name
 $11Group = Get-ADGroupMember -Identity $11Name
 $12Group = Get-ADGroupMember -Identity $12Name
+$StudmailGroup = Get-ADGroupMember -Identity $Studmail
+$5mailGroup = Get-ADGroupMember -Identity $5mail
+$6mailGroup = Get-ADGroupMember -Identity $6mail
+$7mailGroup = Get-ADGroupMember -Identity $7mail
+$8mailGroup = Get-ADGroupMember -Identity $8mail
+$9mailGroup = Get-ADGroupMember -Identity  $9mail
+$10mailGroup = Get-ADGroupMember -Identity $10mail
+$11mailGroup = Get-ADGroupMember -Identity $11mail
+$12mailGroup = Get-ADGroupMember -Identity $12mail
 $LocalAdmin = Get-ADGroupMember -Identity $UserAdmin
 $LocalPower = Get-ADGroupMember -Identity $UserPower
 $LocalUser = Get-ADGroupMember -Identity $UserRegular
@@ -521,6 +539,11 @@ This is an automated email.
                 Add-ADGroupMember -Identity "Students" -Member $LoginName
                 write-host "${LoginName} added Students Group"
             }
+            # Check Group Membership
+            If (!($StudmailGroup.SamAccountName.contains($LoginName))) {
+                Add-ADGroupMember -Identity $Studmail -Member $LoginName
+                write-host "${LoginName} added Students Mail Group"
+            }
             If (!($LocalUser.SamAccountName.contains($LoginName))) {
                 write-host "${LoginName} Add to local user group for domain workstations"
                 Add-ADGroupMember -Identity $UserRegular -Member $LoginName
@@ -544,59 +567,76 @@ This is an automated email.
             ### Remove groups for other grades and add the correct grade ###
 
             # Confirm membership to Year 5
-            If (($YearGroup -eq "5") -and (!($5Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "5") { # -and (!($5Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $5Name -Member $LoginName
+                    Add-ADGroupMember -Identity $5mail -Member $LoginName
             }
             Elseif (!($YearGroup -eq "5")) {
                 Remove-ADGroupMember -Identity $5Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $5mail -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 6
-            If (($YearGroup -eq "6") -and (!($6Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "6") { #-and (!($6Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $6Name -Member $LoginName
+                    Add-ADGroupMember -Identity $6mail -Member $LoginName
+            }
             Elseif (!($YearGroup -eq "6")) {
                 Remove-ADGroupMember -Identity $6Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $6mail -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 7
-            If (($YearGroup -eq "7") -and (!($7Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "7") { # -and (!($7Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $7Name -Member $LoginName
+                    Add-ADGroupMember -Identity $7mail -Member $LoginName
             }
             Elseif (!($YearGroup -eq "7")) {
                 Remove-ADGroupMember -Identity $7Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $7mail -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 8
-            If (($YearGroup -eq "8") -and (!($8Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "8") { # -and (!($8Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $8Name -Member $LoginName
+                    Add-ADGroupMember -Identity $8mail -Member $LoginName
             }
             Elseif (!($YearGroup -eq "8")) {
                 Remove-ADGroupMember -Identity $8Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $8mail -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 9
-            If (($YearGroup -eq "9") -and (!($9Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "9") { # -and (!($9Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $9Name -Member $LoginName
+                    Add-ADGroupMember -Identity $9mail -Member $LoginName
             }
             Elseif (!($YearGroup -eq "9")) {
                 Remove-ADGroupMember -Identity $9Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $9mail -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 10
-            If (($YearGroup -eq "10") -and (!($10Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "10") { # -and (!($10Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $10Name -Member $LoginName
+                    Add-ADGroupMember -Identity $10mail -Member $LoginName
             }
             Elseif (!($YearGroup -eq "10")) {
                 Remove-ADGroupMember -Identity $10Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $10mail -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 11
-            If (($YearGroup -eq "11") -and (!($11Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "11") { # -and (!($11Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $11Name -Member $LoginName
+                    Add-ADGroupMember -Identity $11mail -Member $LoginName
             }
             Elseif (!($YearGroup -eq "11")) {
                 Remove-ADGroupMember -Identity $11Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $11mail -Member $LoginName -Confirm:$false
             }
             # Confirm membership to Year 12
-            If (($YearGroup -eq "12") -and (!($12Group.SamAccountName.contains($LoginName)))) {
+            If ($YearGroup -eq "12") { # -and (!($12Group.SamAccountName.contains($LoginName)))) {
                     Add-ADGroupMember -Identity $12Name -Member $LoginName
+                    Add-ADGroupMember -Identity $12mail -Member $LoginName
             }
             Elseif (!($YearGroup -eq "12")) {
                 Remove-ADGroupMember -Identity $12Name -Member $LoginName -Confirm:$false
+                Remove-ADGroupMember -Identity $12mail -Member $LoginName -Confirm:$false
             }
         }
         Else {
