@@ -134,9 +134,16 @@ foreach($line in $Input) {
     ### Process Current Users ###
     If ($Termination.length -eq 0) {
         # get location and check for existing license
-        $testusagelocation = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).UsageLocation
-        $test365license = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).isLicensed
-        $testblock = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).BlockCredential
+        $tempUser = Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue
+        $testusagelocation = $tempUser.UsageLocation
+        $test365license = $tempUser.isLicensed
+        $testblock = $tempUser.BlockCredential
+        $testpassexpiry = $tempUser.PasswordNeverExpires
+
+        If (($tempUser) -and (!($testpassexpiry))) {
+            write-host "Disabling password expiry for: ${LoginName}"
+            Set-MsolUser -UserPrincipalName $SchoolEmail -PasswordNeverExpires $true
+        }
 
         If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
             # User is denied from accessing their account
@@ -194,9 +201,17 @@ foreach($line in $StudentInput) {
     ### Process Current Users ###
     If ($Termination.length -eq 0) {
         # get location and check for existing license
-        $testusagelocation = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).UsageLocation
-        $test365license = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).isLicensed
-        $testblock = (Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue).BlockCredential
+        # get location and check for existing license
+        $tempUser = Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue
+        $testusagelocation = $tempUser.UsageLocation
+        $test365license = $tempUser.isLicensed
+        $testblock = $tempUser.BlockCredential
+        $testpassexpiry = $tempUser.PasswordNeverExpires
+
+        If (($tempUser) -and (!($testpassexpiry))) {
+            write-host "Disabling password expiry for: ${LoginName}"
+            Set-MsolUser -UserPrincipalName $SchoolEmail -PasswordNeverExpires $true
+        }
 
         If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
             # User is denied from accessing their account
