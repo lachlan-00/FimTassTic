@@ -109,8 +109,6 @@ $smtpserver = "mail.vnc.qld.edu.au"
 $emailsubject = "New AD User Created:"
 # message for disabled users
 $disableemailsubject = "Current AD User Disabled:"
-$disableemailbody = "Current AD user disabled
-This is an automated email that is sent when an existing user is disabled."
 
 # Get membership for group Membership Tests
 $VillanovaGroups = Get-ADGroup -Filter * -SearchBase "OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
@@ -329,6 +327,22 @@ Phone Ext: ${Telephone}
    (Information about who this person is replacing can speed this up)
  * Access to TASS.Web, Teacher Kiosk and Web.Book to be set up as required.
  * Any changes to these details must be made in TASS.Web payroll.
+
+###########################
+This is an automated email.
+###########################"
+
+        $disableemailbody = "A current AD user has been disabled.
+
+This email is sent when an existing user is disabled.
+Full Name: ${FullName}
+User Name: ${LoginName}
+Teacher Code: ${TeacherCode}
+Position: ${Position}
+Phone Ext: ${Telephone}
+
+ * If this is a mistake please check the Termination Date in TASS.Web payroll.
+ * Any other queries about this email can be forwarded to IT.
 
 ###########################
 This is an automated email.

@@ -377,8 +377,12 @@ This is an automated email.
         $TestPrincipal = $TestUser.UserPrincipalName
 
 
+        # Check for Deny-Access members
+        If (!($DenyAccessGroupMembers)) {
+            #Empty Group
+        }
         # Remove User from groups if they are a member of Deny Access
-        If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
+        ElseIf ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
             $RemovalCheck = $False
             If ($TestMembership) {
                 # Remove All Villanova  Groups
