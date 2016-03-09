@@ -56,7 +56,7 @@ $inputcount = (Import-CSV "C:\DATA\csv\fim_staffALL.csv" -Encoding UTF8 | Measur
 $StudentInput = Import-CSV "C:\DATA\csv\fim_student.csv" -Encoding UTF8
 $StudentInputcount = (Import-CSV "C:\DATA\csv\fim_student.csv" -Encoding UTF8 | Measure-Object).Count
 $enrolledinput = Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8
-$enrolledinputtcount = (Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
+$enrolledinputcount = (Import-CSV "C:\DATA\csv\fim_enrolled_students-ALL.csv" -Encoding UTF8 | Measure-Object).Count
 
 # Deny Access group is used to remove problem students from important services
 $DenyAccessGroup = "CN=S-G_Deny-Access,OU=security,OU=UserGroups,DC=villanova,DC=vnc,DC=qld,DC=edu,DC=au"
@@ -105,6 +105,7 @@ Get-MsolUser -all | Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUser -Usa
 ### Create Staff 365 Accounts and licenses ###
 ##############################################
 
+write-host
 write-host "### Parsing Staff File"
 write-host
 
@@ -145,7 +146,12 @@ foreach($line in $Input) {
             Set-MsolUser -UserPrincipalName $SchoolEmail -PasswordNeverExpires $true
         }
 
-        If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
+        # Check for Deny-Access members
+        If (!($DenyAccessGroupMembers)) {
+            #Empty Group
+        }
+        # Remove User from groups if they are a member of Deny Access
+        ElseIf ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
             # User is denied from accessing their account
             If (!($testblock)) {
                 write-host "blocking user account"
@@ -168,6 +174,7 @@ foreach($line in $Input) {
     }
 }
 
+write-host
 write-host "### Parsing Student File"
 write-host
 
@@ -201,7 +208,6 @@ foreach($line in $StudentInput) {
     ### Process Current Users ###
     If ($Termination.length -eq 0) {
         # get location and check for existing license
-        # get location and check for existing license
         $tempUser = Get-MsolUser -UserPrincipalName $SchoolEmail -ErrorAction SilentlyContinue
         $testusagelocation = $tempUser.UsageLocation
         $test365license = $tempUser.isLicensed
@@ -213,10 +219,15 @@ foreach($line in $StudentInput) {
             Set-MsolUser -UserPrincipalName $SchoolEmail -PasswordNeverExpires $true
         }
 
-        If ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
+        # Check for Deny-Access members
+        If (!($DenyAccessGroupMembers)) {
+            #Empty Group
+        }
+        # Remove User from groups if they are a member of Deny Access
+        ElseIf ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
             # User is denied from accessing their account
             If (!($testblock)) {
-                write-host "blocking user account"
+                write-host "blocking user account ${LoginName}"
                 Set-MsolUser -UserPrincipalName $SchoolEmail -BlockCredential $true
             }
         }
