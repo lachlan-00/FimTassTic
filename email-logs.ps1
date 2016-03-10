@@ -43,12 +43,12 @@ $filestaff = ".\log\staff-${LogDate}.log"
 $filestudent = ".\log\student-${LogDate}.log"
 
 #EMAIL SETTINGS
-# specify who gets notified 
+# specify who gets notified
 $tonotification = "it@vnc.qld.edu.au"
 #$bccnotification = "staff-library@vnc.qld.edu.au"
-# specify where the notifications come from 
+# specify where the notifications come from
 $fromnotification = "notifications@vnc.qld.edu.au"
-# specify the SMTP server 
+# specify the SMTP server
 $smtpserver = "mail.vnc.qld.edu.au"
 # message subject
 $emailsubject = "AD User Creation Logs: ${Now}"

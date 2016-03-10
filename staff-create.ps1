@@ -99,11 +99,11 @@ $DATE = "${YEAR}/${MONTH}/${DAY}"
 $LogDate = "${YEAR}-${MONTH}-${DAY}"
 
 #EMAIL SETTINGS
-# specify who gets notified 
+# specify who gets notified
 $tonotification = "notifications@vnc.qld.edu.au"
-# specify where the notifications come from 
+# specify where the notifications come from
 $fromnotification = "notifications@vnc.qld.edu.au"
-# specify the SMTP server 
+# specify the SMTP server
 $smtpserver = "mail.vnc.qld.edu.au"
 # message for created users
 $emailsubject = "New AD User Created:"

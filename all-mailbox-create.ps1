@@ -24,7 +24,7 @@
 
 import-module activedirectory
 
-If (Get-Command Get-Mailbox) {
+If (Get-Command Get-Mailbox -ErrorAction SilentlyContinue) {
     #write-host "Exchange is imported"
 }
 Else {
@@ -58,6 +58,16 @@ $DATE = "${YEAR}/${MONTH}/${DAY}"
 $FULLDATE = "${DATE} 00:00:00"
 $LogDate = "${YEAR}-${MONTH}-${DAY}"
 
+#EMAIL SETTINGS
+# specify who gets notified
+$tonotification = "payroll@vnc.qld.edu.au"
+# specify where the notifications come from
+$fromnotification = "it@vnc.qld.edu.au"
+# specify the SMTP server
+$smtpserver = "mail.vnc.qld.edu.au"
+# message for created users
+$emailsubject = "New Email Address Created:"
+
 write-host "### Parsing Staff File"
 write-host
 
@@ -86,6 +96,7 @@ foreach($line in $input) {
     $TestUser = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *)
     $TestEnabled = $TestUser.Enabled
     $TestDescription = $TestUser.Description
+    $FullName = $TestUser.Name
 
     ### Process Current Users ###
     If ($Termination.length -eq 0) {
@@ -95,6 +106,23 @@ foreach($line in $input) {
                 Enable-Mailbox -Identity "${userdomain}\${LoginName}" -Alias "${LoginName}"  -Database All-Staff -AddressBookPolicy "Staff Address Policy"
                 Set-Mailbox -Identity "${userdomain}\${LoginName}" -RecipientLimits 50
                 $LogContents += "Created mailbox for ${LoginName}" #| Out-File $LogFile -Append
+                # make sure the account is created before emailing
+                sleep(5)
+                $tempMail = (Get-ADUser -Filter { (SamAccountName -eq $LoginName) } -Properties *).mail
+                $emailbody = "There has been a new email account created for a user on the network.
+
+Full Name: ${FullName}
+User Name: ${LoginName}
+Email Address: ${tempMail}
+
+ To ensure all services are available, please add this new email address
+ to the School Email field in the TASS.web payroll system.
+
+
+###########################
+This is an automated email.
+###########################"
+                Send-MailMessage -From $fromnotification -Subject "${emailsubject} ${LoginName}" -To $tonotification -Body $emailbody -SmtpServer $smtpserver
             }
             #Enable Archive mailbox for user if missing
             If (!($TestUser.msExchArchiveDatabaseLink)) {
