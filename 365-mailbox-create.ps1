@@ -237,6 +237,7 @@ foreach($line in $StudentInput) {
         $test365license = $tempUser.isLicensed
         $testblock = $tempUser.BlockCredential
         $testpassexpiry = $tempUser.PasswordNeverExpires
+        $LicenseList = $tempUser.Licenses.AccountSkuId
 
         If (($tempUser) -and (!($testpassexpiry))) {
             write-host "Disabling password expiry for: ${LoginName}"
@@ -278,7 +279,6 @@ foreach($line in $StudentInput) {
                 # Check the correct licences are assigned
                 ElseIf (($test365license) -and ($testusagelocation -ceq "AU")) {
                     # Add Azure AD Premium for all users
-                    $LicenseList = (Get-MsolUser -UserPrincipalName $SchoolEmail).Licenses.AccountSkuId
                     If (!("vnc4:AAD_PREMIUM" -in $LicenseList)) {
                         write-host "${LoginName} is missing Azure AD Premium license"
                         Set-MsolUserLicense -UserPrincipalName $SchoolEmail -AddLicenses "vnc4:AAD_PREMIUM"
@@ -293,7 +293,7 @@ foreach($line in $StudentInput) {
                     $LicenseList = (Get-MsolUser -UserPrincipalName $SchoolEmail).Licenses.AccountSkuId
                     If (!("vnc4:STANDARDWOFFPACK_IW_STUDENT" -in $LicenseList)) {
                         write-host "${LoginName} is missing a student license"
-                        Set-MsolUserLicense -UserPrincipalName $SchoolEmail -RemoveLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                        Set-MsolUserLicense -UserPrincipalName $SchoolEmail -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
                     }
                 }
             }
