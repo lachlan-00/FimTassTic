@@ -99,7 +99,7 @@ $LogContents = @()
 write-host "### Checking all users are assigned to the AU 365 Location"
 write-host
 
-Get-MsolUser -all | Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUser -UsageLocation AU
+Get-MsolUser -UnlicensedUsersOnly | Set-MsolUser -UsageLocation AU
 
 ##############################################
 ### Create Staff 365 Accounts and licenses ###
@@ -108,6 +108,10 @@ Get-MsolUser -all | Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUser -Usa
 write-host
 write-host "### Parsing Staff File"
 write-host
+
+# Staff Licence options
+$DisableExchangeonline = New-MsolLicenseOptions -AccountSkuId "vnc4:STANDARDWOFFPACK_IW_FACULTY" -DisabledPlans EXCHANGE_S_STANDARD
+
 
 $tmpcount = 0
 $lastprogress = $NULL
@@ -140,6 +144,7 @@ foreach($line in $Input) {
         $test365license = $tempUser.isLicensed
         $testblock = $tempUser.BlockCredential
         $testpassexpiry = $tempUser.PasswordNeverExpires
+        $LicenseList = $tempUser.Licenses.AccountSkuId
 
         If (($tempUser) -and (!($testpassexpiry))) {
             write-host "Disabling password expiry for: ${LoginName}"
@@ -149,22 +154,41 @@ foreach($line in $Input) {
         # Check for Deny-Access members
         If (!($DenyAccessGroupMembers)) {
             #Empty Group
+            $RemovalCheck = $False
         }
         # Remove User from groups if they are a member of Deny Access
         ElseIf ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
             # User is denied from accessing their account
             If (!($testblock)) {
                 write-host "blocking user account"
+                $RemovalCheck = $true
                 Set-MsolUser -UserPrincipalName $SchoolEmail -BlockCredential $true
             }
         }
-        ElseIf (($TestUser) -and ($SchoolEmail)) {
-
+        If (($TestUser) -and ($SchoolEmail) -and (!($RemovalCheck))) {
             # Only Add licenses when users have a location set to AU
             If (!($test365license) -and ($testusagelocation -ceq "AU")) {
                 write-host "Missing 365 License for ${LoginName}... Adding."
-                Get-MsolUser -UserPrincipalName $SchoolEmail| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:AAD_PREMIUM"
+                Set-MsolUserLicense -UserPrincipalName $SchoolEmail -AddLicenses "vnc4:AAD_PREMIUM", "vnc4:STANDARDWOFFPACK_IW_FACULTY" -LicenseOptions $DisableExchangeonline
                 $LogContents += "Added Faculty 365 License for: ${LoginName}" #| Out-File $LogFile -Append
+            }
+            # Check the correct licences are assigned
+            ElseIf (($test365license) -and ($testusagelocation -ceq "AU")) {
+                # Add Azure AD Premium for all users
+                If (!("vnc4:AAD_PREMIUM" -in $LicenseList)) {
+                    write-host "${LoginName} is missing Azure AD Premium license"
+                    Set-MsolUserLicense -UserPrincipalName $SchoolEmail -AddLicenses "vnc4:AAD_PREMIUM"
+                }
+                # Remove Student Licenses to allow adding staff.
+                If ("vnc4:STANDARDWOFFPACK_IW_STUDENT" -in $LicenseList) {
+                    write-host "${LoginName} is a staff member with a student license"
+                    Set-MsolUserLicense -UserPrincipalName $SchoolEmail -RemoveLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                }
+                # Add Faculty license
+                If (!("vnc4:STANDARDWOFFPACK_IW_FACULTY" -in $LicenseList)) {
+                    write-host "${LoginName} is missing Faculty 365 license"
+                    Set-MsolUserLicense -UserPrincipalName $SchoolEmail -AddLicenses "vnc4:STANDARDWOFFPACK_IW_FACULTY" -LicenseOptions $DisableExchangeonline
+                }
             }
             If ($testblock) {
                 write-host "unblocking user account"
@@ -231,7 +255,7 @@ foreach($line in $StudentInput) {
                 Set-MsolUser -UserPrincipalName $SchoolEmail -BlockCredential $true
             }
         }
-        ElseIf ($TestUser) {
+        If ($TestUser) {
             # Check for 365 mail account
             Try {
                 $testmailenabled = Get-RemoteMailbox -Identity $LoginName
@@ -248,8 +272,29 @@ foreach($line in $StudentInput) {
                 # Only Add licenses when users have a location set to AU
                 If (!($test365license) -and ($testusagelocation -ceq "AU")) {
                     write-host "Missing 365 License for ${LoginName}... Adding."
-                    Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au"| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                    Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au"| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT", "vnc4:AAD_PREMIUM"
                     $LogContents += "Added Student 365 License for: ${LoginName}" #| Out-File $LogFile -Append
+                }
+                # Check the correct licences are assigned
+                ElseIf (($test365license) -and ($testusagelocation -ceq "AU")) {
+                    # Add Azure AD Premium for all users
+                    $LicenseList = (Get-MsolUser -UserPrincipalName $SchoolEmail).Licenses.AccountSkuId
+                    If (!("vnc4:AAD_PREMIUM" -in $LicenseList)) {
+                        write-host "${LoginName} is missing Azure AD Premium license"
+                        Set-MsolUserLicense -UserPrincipalName $SchoolEmail -AddLicenses "vnc4:AAD_PREMIUM"
+                    }
+                    # Remove Staff Licenses to allow adding student.
+                    $LicenseList = (Get-MsolUser -UserPrincipalName $SchoolEmail).Licenses.AccountSkuId
+                    If ("vnc4:STANDARDWOFFPACK_IW_FACULTY" -in $LicenseList) {
+                        write-host "${LoginName} is student with a Faculty 365 license"
+                        Set-MsolUserLicense -UserPrincipalName $SchoolEmail -RemoveLicenses "vnc4:STANDARDWOFFPACK_IW_FACULTY" -LicenseOptions $DisableExchangeonline
+                    }
+                    # Add Student license
+                    $LicenseList = (Get-MsolUser -UserPrincipalName $SchoolEmail).Licenses.AccountSkuId
+                    If (!("vnc4:STANDARDWOFFPACK_IW_STUDENT" -in $LicenseList)) {
+                        write-host "${LoginName} is missing a student license"
+                        Set-MsolUserLicense -UserPrincipalName $SchoolEmail -RemoveLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT"
+                    }
                 }
             }
             Else {

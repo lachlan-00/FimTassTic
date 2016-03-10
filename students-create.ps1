@@ -380,6 +380,7 @@ This is an automated email.
         # Check for Deny-Access members
         If (!($DenyAccessGroupMembers)) {
             #Empty Group
+            $RemovalCheck = $False
         }
         # Remove User from groups if they are a member of Deny Access
         ElseIf ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
@@ -399,6 +400,7 @@ This is an automated email.
                         }
                     }
                 }
+                # Email if groups were removed
                 If ($RemovalCheck) {
                     $LogContents += $DenyBody
                     Send-MailMessage -From $fromnotification -Subject "DENY ACCESS ${LoginName}" -To $tonotification -Cc $ccnotification -Body $DenyBody -SmtpServer $smtpserver
@@ -416,11 +418,13 @@ This is an automated email.
                     Set-ADUser -Identity $LoginName -Title "DENYACCESS"
                     write-host "${LoginName} Title change to: DENYACCESS"
                 }
+                # Skip these users even if no changes were made
+                $RemovalCheck = $true
             }
         }
 
         # set additional user details if the user exists
-        ElseIf ($TestUser) {
+        If (($TestUser) -and (!($RemovalCheck))) {
 
             # Check that UPN is set to email. but only if an email exists
             If (($TestEmail) -and (!($TestEmail -ceq $TestPrincipal))) {
