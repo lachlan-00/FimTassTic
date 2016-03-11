@@ -277,6 +277,7 @@ foreach($line in $input) {
         $Surname = $Surname -replace "O'c", "O'C"
         $Surname = $Surname -replace "O'd", "O'D"
         $Surname = $Surname -replace "O'g", "O'G"
+        $Surname = $Surname -replace "O'h", "O'H"
         $Surname = $Surname -replace "O'k", "O'K"
         $Surname = $Surname -replace "O'n", "O'N"
         $Surname = $Surname -replace "O'r", "O'R"
