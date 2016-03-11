@@ -264,8 +264,6 @@ foreach($line in $StudentInput) {
             Catch {
                 $testmailenabled = $null
             }
-            $testusagelocation = (Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au").UsageLocation
-            $test365license = (Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au").isLicensed
 
             # Only work on users that have a 365 mail account
             If ($testmailenabled) {
@@ -273,7 +271,7 @@ foreach($line in $StudentInput) {
                 # Only Add licenses when users have a location set to AU
                 If (!($test365license) -and ($testusagelocation -ceq "AU")) {
                     write-host "Missing 365 License for ${LoginName}... Adding."
-                    Get-MsolUser -UserPrincipalName "${LoginName}@vnc.qld.edu.au"| Where-Object { $_.isLicensed -ne "TRUE" }| Set-MsolUserLicense -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT", "vnc4:AAD_PREMIUM"
+                    Set-MsolUserLicense -UserPrincipalName "${LoginName}@vnc.qld.edu.au" -AddLicenses "vnc4:STANDARDWOFFPACK_IW_STUDENT", "vnc4:AAD_PREMIUM"
                     $LogContents += "Added Student 365 License for: ${LoginName}" #| Out-File $LogFile -Append
                 }
                 # Check the correct licences are assigned

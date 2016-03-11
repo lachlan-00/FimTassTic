@@ -332,22 +332,6 @@ Phone Ext: ${Telephone}
 This is an automated email.
 ###########################"
 
-        $disableemailbody = "A current AD user has been disabled.
-
-This email is sent when an existing user is disabled.
-Full Name: ${FullName}
-User Name: ${LoginName}
-Teacher Code: ${TeacherCode}
-Position: ${Position}
-Phone Ext: ${Telephone}
-
- * If this is a mistake please check the Termination Date in TASS.Web payroll.
- * Any other queries about this email can be forwarded to IT.
-
-###########################
-This is an automated email.
-###########################"
-
         $errorbody = "Incomplete Staff Data
 
 Full Name: ${FullName}
@@ -1023,6 +1007,21 @@ Please check this out ASAP"
         $TestEnabled = $TestUser.Enabled
         $TestAccountName = $TestUser.SamAccountName
         $TestMembership = $TestUser.MemberOf
+        $disableemailbody = "A current AD user has been disabled.
+
+This email is sent when an existing user is disabled.
+Full Name: ${FullName}
+User Name: ${LoginName}
+Teacher Code: ${TeacherCode}
+Position: ${Position}
+Phone Ext: ${Telephone}
+
+ * If this is a mistake please check the Termination Date in TASS.Web payroll.
+ * Any other queries about this email can be forwarded to IT.
+
+###########################
+This is an automated email.
+###########################"
 
         # Disable users with a termination date if they are still enabled
         If ($TestEnabled) {
