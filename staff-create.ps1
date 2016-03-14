@@ -1006,16 +1006,19 @@ Please check this out ASAP"
         $TestDescription = $TestUser.Description
         $TestDepartment = $TestUser.Department
         $TestEnabled = $TestUser.Enabled
+        $TestName = $Testuser.Name
         $TestAccountName = $TestUser.SamAccountName
         $TestMembership = $TestUser.MemberOf
+        $TestPhone = $TestUser.telephoneNumber
         $disableemailbody = "A current AD user has been disabled.
 
 This email is sent when an existing user is disabled.
-Full Name: ${FullName}
+
+Full Name: ${TestName}
 User Name: ${LoginName}
 Teacher Code: ${TeacherCode}
-Position: ${Position}
-Phone Ext: ${Telephone}
+Position: ${TestTitle}
+Phone Ext: ${TestPhone}
 
  * If this is a mistake please check the Termination Date in TASS.Web payroll.
  * Any other queries about this email can be forwarded to IT.
