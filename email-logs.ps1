@@ -41,26 +41,39 @@ $LogDate = "${YEAR}-${MONTH}-${DAY}"
 # Email attachments to add
 $filestaff = "C:\DATA\log\staff-${LogDate}.log"
 $filestudent = "C:\DATA\log\student-${LogDate}.log"
+$filemailbox = "C:\DATA\log\Email-Creation-${LogDate}.log"
 
 #EMAIL SETTINGS
 # specify who gets notified
 $tonotification = "it@vnc.qld.edu.au"
-#$bccnotification = "staff-library@vnc.qld.edu.au"
+#$bccnotification = ""
 # specify where the notifications come from
-$fromnotification = "notifications@vnc.qld.edu.au"
+$fromnotification = "it@vnc.qld.edu.au"
 # specify the SMTP server
 $smtpserver = "mail.vnc.qld.edu.au"
 # message subject
-$emailsubject = "AD User Creation Logs: ${Now}"
+$emailsubject = "User Creation Logs: ${Now}"
 $emailbody = "This is an automated email containing the logs for user creation."
+$outsubject = $null
 
 # Attachs files if they exist
 $filearray = @()
 if (Test-Path $filestaff) {
     $filearray += $filestaff
+    $outsubject = "AD ${emailsubject}"
 }
 if (Test-Path $filestudent) {
     $filearray += $filestudent
+    $outsubject = "AD ${emailsubject}"
+}
+if (Test-Path $filemailbox) {
+    $filearray += $filestudent
+    $outsubject = "EMAIL ${emailsubject}"
+}
+
+#set specific title based on files
+if ($outsubject) {
+    $emailsubject = $outsubject
 }
 
 # Only send mail is the files exist
