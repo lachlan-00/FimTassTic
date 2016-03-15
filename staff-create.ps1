@@ -102,7 +102,7 @@ $LogDate = "${YEAR}-${MONTH}-${DAY}"
 # specify who gets notified
 $tonotification = "notifications@vnc.qld.edu.au"
 # specify where the notifications come from
-$fromnotification = "notifications@vnc.qld.edu.au"
+$fromnotification = "it@vnc.qld.edu.au"
 # specify the SMTP server
 $smtpserver = "mail.vnc.qld.edu.au"
 # message for created users
