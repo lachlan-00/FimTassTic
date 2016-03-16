@@ -194,47 +194,91 @@ foreach($line in $input) {
         ### Configure User Variables ###
         ################################
 
+        # Group groups into arrays to reduce code length processing removals for each year level
+        [System.Collections.ArrayList]$removeSGarray = $5Name, $6Name, $7Name, $8Name, $9Name, $10Name, $11Name, $12Name
+        [System.Collections.ArrayList]$removeMailarray = $5mail, $6mail, $7mail, $8mail, $9mail, $10mail, $11mail, $12mail
+
         # Get Year level information for groups and home drive
         $YearGroup = $line.year_grp
         If ($YearGroup -eq "5") {
             $UserPath = $5Path
-            $ClassGroup = $5Name
             $StudCompany = "year5"
+            $SGMembership = $5Group
+            $MailMembership = $5mailGroup
+            $addSG = $5Name
+            $addMail= $5mail
+            $removeSGarray.Remove($5Name)
+            $removeMailarray.Remove($5mail)
         }
         If ($YearGroup -eq "6") {
             $UserPath = $6Path
-            $ClassGroup = $6Name
             $StudCompany = "year6"
+            $SGMembership = $6Group
+            $MailMembership = $6mailGroup
+            $addSG = $6Name
+            $addMail= $6mail
+            $removeSGarray.Remove($6Name)
+            $removeMailarray.Remove($6mail)
         }
         If ($YearGroup -eq "7") {
             $UserPath = $7Path
-            $ClassGroup = $7Name
             $StudCompany = "year7"
+            $SGMembership = $7Group
+            $MailMembership = $7mailGroup
+            $addSG = $7Name
+            $addMail= $7mail
+            $removeSGarray.Remove($7Name)
+            $removeMailarray.Remove($7mail)
         }
         If ($YearGroup -eq "8") {
             $UserPath = $8Path
-            $ClassGroup = $8Name
             $StudCompany = "year8"
+            $SGMembership = $8Group
+            $MailMembership = $8mailGroup
+            $addSG = $8Name
+            $addMail= $8mail
+            $removeSGarray.Remove($8Name)
+            $removeMailarray.Remove($8mail)
         }
         If ($YearGroup -eq "9") {
             $UserPath = $9Path
-            $ClassGroup = $9Name
             $StudCompany = "year9"
+            $SGMembership = $9Group
+            $MailMembership = $9mailGroup
+            $addSG = $9Name
+            $addMail= $9mail
+            $removeSGarray.Remove($9Name)
+            $removeMailarray.Remove($9mail)
         }
         If ($YearGroup -eq "10") {
             $UserPath = $10Path
-            $ClassGroup = $10Name
             $StudCompany = "year10"
+            $SGMembership = $10Group
+            $MailMembership = $10mailGroup
+            $addSG = $10Name
+            $addMail= $10mail
+            $removeSGarray.Remove($10Name)
+            $removeMailarray.Remove($10mail)
         }
         If ($YearGroup -eq "11") {
             $UserPath = $11Path
-            $ClassGroup = $11Name
             $StudCompany = "year11"
+            $SGMembership = $11Group
+            $MailMembership = $11mailGroup
+            $addSG = $11Name
+            $addMail= $11mail
+            $removeSGarray.Remove($11Name)
+            $removeMailarray.Remove($11mail)
         }
         If ($YearGroup -eq "12") {
             $UserPath = $12Path
-            $ClassGroup = $12Name
             $StudCompany = "year12"
+            $SGMembership = $12Group
+            $MailMembership = $12mailGroup
+            $addSG = $12Name
+            $addMail= $12mail
+            $removeSGarray.Remove($12Name)
+            $removeMailarray.Remove($12mail)
         }
 
         # Set lower case because powershell ignores uppercase word changes to title case
@@ -369,6 +413,13 @@ This is an automated email.
         $TestNumber = $TestUser.employeeNumber
         $TestID = $TestUser.employeeID
         $TestMembership = $TestUser.MemberOf
+        $TestPrimary = $TestUser.PrimaryGroup
+
+        # Check Primary group (Only relevant for OSx and POSIX)
+        if (!($TestPrimary -eq (Get-ADGroup -Identity "Domain Users").DistinguishedName)) {
+            Write-Host "WARNING: ${LoginName} has the wrong primary group: ${TestPrimary}"
+            Write-Host
+        }
 
         # Get office365 details
         $TestEmail = $TestUser.mail
@@ -384,7 +435,7 @@ This is an automated email.
             $RemovalCheck = $False
         }
         # Remove User from groups if they are a member of Deny Access
-        ElseIf ($DenyAccessGroupMembers.SamAccountName.contains($LoginName)) {
+        ElseIf ($LoginName -in $DenyAccessGroupMembers.SamAccountName) {
             $RemovalCheck = $False
             If ($TestMembership) {
                 # Remove All Villanova  Groups
@@ -544,108 +595,60 @@ This is an automated email.
             }
 
             # Check Group Membership
-            If (!($StudentGroup.SamAccountName.contains($LoginName))) {
+            If (!($LoginName -in $StudentGroup.SamAccountName)) {
                 Add-ADGroupMember -Identity "Students" -Member $LoginName
                 write-host "${LoginName} added Students Group"
             }
             # Check Group Membership
-            If (!($StudmailGroup.SamAccountName.contains($LoginName))) {
+            If (!($LoginName -in $StudmailGroup.SamAccountName)) {
                 Add-ADGroupMember -Identity $Studmail -Member $LoginName
                 write-host "${LoginName} added Students Mail Group"
             }
-            If (!($LocalUser.SamAccountName.contains($LoginName))) {
+            If (!($LoginName -in $LocalUser.SamAccountName)) {
                 write-host "${LoginName} Add to local user group for domain workstations"
                 Add-ADGroupMember -Identity $UserRegular -Member $LoginName
             }
             # $MoodleStudentMembers
-            If (!($MoodleStudentMembers.SamAccountName.contains($LoginName))) {
+            If (!($LoginName -in $MoodleStudentMembers.SamAccountName)) {
                 Add-ADGroupMember -Identity $MoodleStudent -Member $LoginName
                 write-host "${LoginName} added MoodleStudent Group"
             }
             # $MoodleTechHelpMembers
-            If (!($MoodleTechHelpMembers.SamAccountName.contains($LoginName))) {
+            If (!($LoginName -in $MoodleTechHelpMembers.SamAccountName)) {
                 Add-ADGroupMember -Identity $MoodleTechHelp -Member $LoginName
                 write-host "${LoginName} added MoodleTechHelp Group"
             }
             # $TestPrintGroup
-            If (!($TestPrintGroup.name.contains($TestUser.name))) {
+            If (!($LoginName -in $TestPrintGroup.SamAccountName)) {
                 Add-ADGroupMember -Identity $GenericPrintCode -Member $TestAccountName
                 write-host "${LoginName} added default printer group ${GenericPrintCode}"
             }
 
             ### Remove groups for other grades and add the correct grade ###
 
-            # Confirm membership to Year 5
-            If ($YearGroup -eq "5") { # -and (!($5Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $5Name -Member $LoginName
-                    Add-ADGroupMember -Identity $5mail -Member $LoginName
+            # Confirm membership to Year Level Security Groups
+            If (!($LoginName -in $SGMembership.SamAccountName)) {
+                Add-ADGroupMember -Identity $addSG -Member $LoginName
+                write-host "${LoginName} added default ${YearGroup} security group"
             }
-            Elseif (!($YearGroup -eq "5")) {
-                Remove-ADGroupMember -Identity $5Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $5mail -Member $LoginName -Confirm:$false
+            # Remove membership to Year Level Security Groups
+            Foreach ($tmpgroup in $removeSGarray) {
+                If ($LoginName -in $tmpgroup.SamAccountName) {
+                    write-host "${LoginName} removing ${tmpgroup}"
+                    Remove-ADGroupMember -Identity $tmpgroup -Member $LoginName -Confirm:$false
+                }
             }
-            # Confirm membership to Year 6
-            If ($YearGroup -eq "6") { #-and (!($6Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $6Name -Member $LoginName
-                    Add-ADGroupMember -Identity $6mail -Member $LoginName
+            # Confirm membership to Year Level Mail Groups
+            If (!($LoginName -in $MailMembership.SamAccountName)) {
+                Add-ADGroupMember -Identity $addMail -Member $LoginName
+                write-host "${LoginName} added default ${YearGroup} mail group"
             }
-            Elseif (!($YearGroup -eq "6")) {
-                Remove-ADGroupMember -Identity $6Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $6mail -Member $LoginName -Confirm:$false
-            }
-            # Confirm membership to Year 7
-            If ($YearGroup -eq "7") { # -and (!($7Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $7Name -Member $LoginName
-                    Add-ADGroupMember -Identity $7mail -Member $LoginName
-            }
-            Elseif (!($YearGroup -eq "7")) {
-                Remove-ADGroupMember -Identity $7Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $7mail -Member $LoginName -Confirm:$false
-            }
-            # Confirm membership to Year 8
-            If ($YearGroup -eq "8") { # -and (!($8Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $8Name -Member $LoginName
-                    Add-ADGroupMember -Identity $8mail -Member $LoginName
-            }
-            Elseif (!($YearGroup -eq "8")) {
-                Remove-ADGroupMember -Identity $8Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $8mail -Member $LoginName -Confirm:$false
-            }
-            # Confirm membership to Year 9
-            If ($YearGroup -eq "9") { # -and (!($9Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $9Name -Member $LoginName
-                    Add-ADGroupMember -Identity $9mail -Member $LoginName
-            }
-            Elseif (!($YearGroup -eq "9")) {
-                Remove-ADGroupMember -Identity $9Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $9mail -Member $LoginName -Confirm:$false
-            }
-            # Confirm membership to Year 10
-            If ($YearGroup -eq "10") { # -and (!($10Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $10Name -Member $LoginName
-                    Add-ADGroupMember -Identity $10mail -Member $LoginName
-            }
-            Elseif (!($YearGroup -eq "10")) {
-                Remove-ADGroupMember -Identity $10Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $10mail -Member $LoginName -Confirm:$false
-            }
-            # Confirm membership to Year 11
-            If ($YearGroup -eq "11") { # -and (!($11Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $11Name -Member $LoginName
-                    Add-ADGroupMember -Identity $11mail -Member $LoginName
-            }
-            Elseif (!($YearGroup -eq "11")) {
-                Remove-ADGroupMember -Identity $11Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $11mail -Member $LoginName -Confirm:$false
-            }
-            # Confirm membership to Year 12
-            If ($YearGroup -eq "12") { # -and (!($12Group.SamAccountName.contains($LoginName)))) {
-                    Add-ADGroupMember -Identity $12Name -Member $LoginName
-                    Add-ADGroupMember -Identity $12mail -Member $LoginName
-            }
-            Elseif (!($YearGroup -eq "12")) {
-                Remove-ADGroupMember -Identity $12Name -Member $LoginName -Confirm:$false
-                Remove-ADGroupMember -Identity $12mail -Member $LoginName -Confirm:$false
+            # Remove membership to Year Level Mail Groups
+            Foreach ($tmpgroup in $removeMailarray) {
+                If ($LoginName -in $tmpgroup.SamAccountName) {
+                    write-host "${LoginName} removing ${tmpgroup}"
+                    Remove-ADGroupMember -Identity $tmpgroup -Member $LoginName -Confirm:$false
+                }
             }
         }
         Else {

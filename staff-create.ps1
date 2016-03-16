@@ -399,6 +399,13 @@ Please check this out ASAP"
         $TestAccountName = $TestUser.SamAccountName
         $TestEnabled = $TestUser.Enabled
         $TestHome = $TestUser.homedirectory
+        $TestPrimary = $TestUser.PrimaryGroup
+
+        # Check Primary group (Only relevant for OSx and POSIX)
+        if (!($TestPrimary -eq (Get-ADGroup -Identity "Domain Users").DistinguishedName)) {
+            Write-Host "WARNING: ${LoginName} has the wrong primary group: ${TestPrimary}"
+            Write-Host
+        }
 
         # Get office365 details
         $TestEmail = $TestUser.mail
@@ -585,11 +592,11 @@ Please check this out ASAP"
             }
 
             # Check Group Membership
-            If (!($TestStaff.SamAccountName.contains($LoginName))) {
+            If (!($LoginName -in $TestStaff.SamAccountName)) {
                         Add-ADGroupMember -Identity "Staff" -Member $TestAccountName
                         write-host $TestAccountName "added Staff"
             }
-            If (!($TestPrintGroup.SamAccountName.contains($LoginName))) {
+            If (!($LoginName -in $TestPrintGroup.SamAccountName)) {
                         Add-ADGroupMember -Identity $GenericPrintCode -Member $TestAccountName
                         write-host $TestAccountName "added default printer group ${GenericPrintCode}"
             }
@@ -675,20 +682,20 @@ Please check this out ASAP"
                     }
                 }
                 # Check Group Membership
-                If (!($TestTeachers.SamAccountName.contains($LoginName))) {
+                If (!($LoginName -in $TestTeachers.SamAccountName)) {
                     Add-ADGroupMember -Identity $TeacherName -Member $TestAccountName
                     write-host $TestAccountName "ADDED to Teachers Group"
                 }
-                If (!($TestMoodleTeachers.SamAccountName.contains($LoginName))) {
+                If (!($LoginName -in $TestMoodleTeachers.SamAccountName)) {
                     Add-ADGroupMember -Identity $MoodleName -Member $TestAccountName
                     write-host $TestAccountName "ADDED to MoodleTeachers Group"
                 }
-                If (!($TestMapTeachers.SamAccountName.contains($LoginName))) {
+                If (!($LoginName -in $TestMapTeachers.SamAccountName)) {
                     Add-ADGroupMember -Identity $TeacherMapName -Member $TestAccountName
                     write-host $TestAccountName "ADDED to Map-Teachers Group"
                 }
                 # $TestMoodlePlaypen
-                If (!($TestMoodlePlaypen.SamAccountName.contains($LoginName))) {
+                If (!($LoginName -in $TestMoodlePlaypen.SamAccountName)) {
                     Add-ADGroupMember -Identity $MoodlePlaypen -Member $TestAccountName
                     write-host $TestAccountName "ADDED to MoodlePlaypen Group"
                 }
