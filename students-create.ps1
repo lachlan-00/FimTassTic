@@ -92,7 +92,7 @@ If ($DAY.length -eq 1) {
     $DAY = "0${DAY}"
 }
 $DATE = "${YEAR}/${MONTH}/${DAY}"
-$DATE = "${DATE} 00:00:00"
+#$DATE = "${DATE} 00:00:00"
 $LogDate = "${YEAR}-${MONTH}-${DAY}"
 
 #EMAIL SETTINGS
