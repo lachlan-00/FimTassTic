@@ -482,7 +482,7 @@ Please check this out ASAP"
             }
 
             # Add Position if there is one
-            If (!($Position -ceq $TestDescription) -and (!($Position.length -eq 0))) {
+            If ((!($Position -ceq $TestDescription)) -and (!($Position.length -eq 0)) -and (!($TestDescription -ceq "keep"))) {
                 Set-ADUser -Identity $LoginName -Description $Position
                 write-host $TestAccountName, "Changed position to:", $Position
                 write-host
@@ -644,7 +644,7 @@ Please check this out ASAP"
 
             #Make sure Teachers have the correct Company
             If (($TestDescription) -and ($TestCompany)) {
-                If ((!($TestCompany -ceq "Teacher")) -and (!($TestDescription.Contains("Relief Teacher")))) {
+                If ((!($TestCompany -ceq "Teacher")) -and (!($TestDescription.Contains("Relief Teacher")) -and (!($TestDescription -ceq "keep")))) {
                     Set-ADUser -Identity $LoginName -Company "Teacher"
                     write-host "Changing Company for ${LoginName} to Teacher"
                     write-host

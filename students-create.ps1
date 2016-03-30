@@ -486,12 +486,12 @@ This is an automated email.
             }
 
             # Enable user if disabled
-            If ((!($TestEnabled)) -and (!($TestDescription -eq "disable"))) {
+            If ((!($TestEnabled)) -and (!($TestDescription -ceq "disable"))) {
                 Set-ADUser -Identity $LoginName -Enabled $true
                 $LogContents += "Enabling ${TestAccountName}"
             }
             # Disable if description contains disable
-            ElseIf (($TestEnabled) -and ($TestDescription -eq "disable")) {
+            ElseIf (($TestEnabled) -and ($TestDescription -ceq "disable")) {
                 Set-ADUser -Identity $LoginName -Enabled $false
                 $LogContents += "Disabling ${TestAccountName}"
             }
@@ -503,7 +503,7 @@ This is an automated email.
                 $LogContents += "Moving ${TestAccountName} To: ${UserPath}"
             }
 
-            If ((!($TestDescription -eq $UserCode)) -and (!($TestDescription -eq "disable"))) {
+            If ((!($TestDescription -eq $UserCode)) -and (!($TestDescription -ceq "disable")) -and (!($TestDescription -ceq "keep"))) {
                 Set-ADUser -Identity $LoginName -Description $UserCode
                 write-host $FullName, "changing description from ${TestDescription} to ${UserCode}"
                 write-host
@@ -705,7 +705,7 @@ This is an automated email.
         If ($TestEnabled) {
 
             # Don't disable users we want to keep
-            If ($TestDescription -eq "keep") {
+            If ($TestDescription -ceq 'keep') {
                 If (!($LoginName -eq '10961')) {
                     $LogContents += "${LoginName} Keeping terminated user"
                 }
