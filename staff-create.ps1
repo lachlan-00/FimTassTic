@@ -312,7 +312,7 @@ foreach($line in $input) {
 
 Full Name: ${FullName}
 User Name: ${LoginName}
-Password: ${randompass}
+Password: ${userpass}
 Teacher Code: ${TeacherCode}
 Position: ${Position}
 Phone Ext: ${Telephone}
@@ -337,7 +337,7 @@ This is an automated email.
 
 Full Name: ${FullName}
 User Name: ${LoginName}
-Password: ${randompass}
+Password: ${userpass}
 Teacher Code: ${TeacherCode}
 Position: ${Position}
 Phone Ext: ${Telephone}
